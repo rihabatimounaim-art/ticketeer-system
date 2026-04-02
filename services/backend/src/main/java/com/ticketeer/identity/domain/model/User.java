@@ -1,5 +1,6 @@
 package com.ticketeer.identity.domain.model;
 
+import com.ticketeer.identity.application.port.PasswordVerifier;
 import com.ticketeer.shared.domain.exception.BusinessRuleViolationException;
 
 import java.util.Objects;
@@ -62,12 +63,17 @@ public class User {
         }
     }
 
-    public void checkPassword(final String providedHash) {
-        if (!this.passwordHash.equals(providedHash)) {
-            throw new BusinessRuleViolationException("Invalid credentials");
-        }
+    public void authenticate(final PasswordVerifier passwordVerifier, final String rawPassword) {
+    if (passwordVerifier == null) {
+        throw new BusinessRuleViolationException("Password verifier is required");
     }
-
+    if (rawPassword == null || rawPassword.isBlank()) {
+        throw new BusinessRuleViolationException("Password must be provided");
+    }
+    if (!passwordVerifier.matches(rawPassword, this.passwordHash)) {
+        throw new BusinessRuleViolationException("Invalid credentials");
+    }
+}
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
