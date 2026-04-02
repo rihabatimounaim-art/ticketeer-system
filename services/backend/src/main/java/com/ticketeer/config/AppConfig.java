@@ -1,5 +1,9 @@
 package com.ticketeer.config;
 
+import com.ticketeer.identity.infrastructure.JwtProperties;
+import com.ticketeer.identity.infrastructure.JwtTokenGenerator;
+import com.ticketeer.shared.infrastructure.SystemDomainClock;
+import org.springframework.beans.factory.annotation.Value;
 import com.ticketeer.identity.application.port.PasswordVerifier;
 import com.ticketeer.identity.application.port.TokenGenerator;
 import com.ticketeer.identity.application.port.UserRepository;
