@@ -20,9 +20,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtParser jwtParser(JwtProperties jwtProperties) {
-        return new JwtParser(jwtProperties);
-    }
+public JwtParser jwtParser() {
+    return new JwtParser();
+}
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenValidator validator,
