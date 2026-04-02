@@ -1,26 +1,33 @@
-package com.ticketeer.control.infrastructure;
+package com.ticketeer.identity.infrastructure;
 
-import com.ticketeer.control.application.port.ValidationRepository;
-import com.ticketeer.control.domain.model.ValidationRecord;
-import com.ticketeer.ticketing.domain.model.TicketId;
+import com.ticketeer.identity.application.port.UserRepository;
+import com.ticketeer.identity.domain.model.User;
+import com.ticketeer.identity.domain.model.UserId;
+import com.ticketeer.identity.domain.model.UserRole;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public class InMemoryValidationRepository implements ValidationRepository {
+public class InMemoryUserRepository implements UserRepository {
 
-    private final Map<TicketId, List<ValidationRecord>> storage = new HashMap<>();
+    private final Map<String, User> users = Map.of(
+            "admin@ticketeer.com",
+            new User(
+                    new UserId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+                    "Admin",
+                    "User",
+                    "admin@ticketeer.com",
+                    "admin123",
+                    UserRole.ADMIN,
+                    true
+            )
+    );
 
     @Override
-    public ValidationRecord save(ValidationRecord record) {
-        storage.computeIfAbsent(record.getTicketId(), k -> new ArrayList<>())
-               .add(record);
-        return record;
-    }
-
-    @Override
-    public List<ValidationRecord> findByTicketId(TicketId ticketId) {
-        return storage.getOrDefault(ticketId, Collections.emptyList());
+    public Optional<User> findByEmail(final String email) {
+        return Optional.ofNullable(users.get(email));
     }
 }
