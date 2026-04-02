@@ -41,6 +41,9 @@ public class ValidationRecord {
     public ValidationResult getResult() {
         return result;
     }
+    public TicketId getTicketId() {
+    return ticketId;
+    }
 
     @Override
     public boolean equals(Object o) {
