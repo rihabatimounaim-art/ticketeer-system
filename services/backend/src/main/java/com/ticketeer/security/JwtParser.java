@@ -1,18 +1,10 @@
 package com.ticketeer.security;
 
-import com.ticketeer.identity.infrastructure.JwtProperties;
-
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 
 public class JwtParser {
-
-    private final JwtProperties jwtProperties;
-
-    public JwtParser(final JwtProperties jwtProperties) {
-        this.jwtProperties = jwtProperties;
-    }
 
     public JwtClaims parse(final String token) {
         final String[] parts = token.split("\\.");
@@ -20,13 +12,16 @@ public class JwtParser {
             throw new RuntimeException("Invalid JWT");
         }
 
-        final String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+        final String payloadJson = new String(
+                Base64.getUrlDecoder().decode(parts[1]),
+                StandardCharsets.UTF_8
+        );
 
-        final String subject = extract(payloadJson, "sub");
-        final String role = extract(payloadJson, "role");
-        final String email = extract(payloadJson, "email");
-        final long iat = Long.parseLong(extract(payloadJson, "iat"));
-        final long exp = Long.parseLong(extract(payloadJson, "exp"));
+        final String subject = extractString(payloadJson, "sub");
+        final String role = extractString(payloadJson, "role");
+        final String email = extractString(payloadJson, "email");
+        final long iat = extractLong(payloadJson, "iat");
+        final long exp = extractLong(payloadJson, "exp");
 
         if (Instant.now().getEpochSecond() > exp) {
             throw new RuntimeException("JWT expired");
@@ -35,12 +30,37 @@ public class JwtParser {
         return new JwtClaims(subject, role, email, iat, exp);
     }
 
-    private String extract(String json, String field) {
+    private String extractString(final String json, final String field) {
         final String pattern = "\"" + field + "\":\"";
         int start = json.indexOf(pattern);
-        if (start == -1) return null;
+        if (start == -1) {
+            throw new RuntimeException("Missing field: " + field);
+        }
         start += pattern.length();
         int end = json.indexOf("\"", start);
+        if (end == -1) {
+            throw new RuntimeException("Invalid string field: " + field);
+        }
         return json.substring(start, end);
+    }
+
+    private long extractLong(final String json, final String field) {
+        final String pattern = "\"" + field + "\":";
+        int start = json.indexOf(pattern);
+        if (start == -1) {
+            throw new RuntimeException("Missing field: " + field);
+        }
+        start += pattern.length();
+
+        int end = start;
+        while (end < json.length() && Character.isDigit(json.charAt(end))) {
+            end++;
+        }
+
+        if (start == end) {
+            throw new RuntimeException("Invalid numeric field: " + field);
+        }
+
+        return Long.parseLong(json.substring(start, end));
     }
 }
