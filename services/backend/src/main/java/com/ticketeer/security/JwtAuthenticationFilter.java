@@ -39,6 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             try {
                 final JwtClaims claims = jwtParser.parse(token);
+                System.out.println("JWT role = " + claims.role());
+System.out.println("JWT subject = " + claims.subject());
+System.out.println("JWT email = " + claims.email());
                 final JwtAuthenticatedUser principal = new JwtAuthenticatedUser(
                         claims.subject(),
                         claims.email(),
@@ -51,6 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 null,
                                 List.of(new SimpleGrantedAuthority("ROLE_" + claims.role()))
                         );
+                System.out.println("Authorities = " + authentication.getAuthorities());
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
