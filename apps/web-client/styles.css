@@ -1,0 +1,38 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f6fa;
+}
+
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+input {
+  display: block;
+  margin-bottom: 10px;
+  padding: 8px;
+  width: 100%;
+}
+
+button {
+  padding: 10px;
+  background: #2f80ed;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+pre {
+  background: #eee;
+  padding: 10px;
+  margin-top: 10px;
+}
