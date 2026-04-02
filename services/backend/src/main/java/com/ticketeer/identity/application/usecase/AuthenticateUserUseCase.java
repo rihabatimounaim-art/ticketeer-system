@@ -39,6 +39,8 @@ public class AuthenticateUserUseCase {
                 .orElseThrow(() -> new BusinessRuleViolationException("Invalid credentials"));
 
         user.ensureActive();
-
         user.authenticate(passwordVerifier, command.rawPassword());
+
+        return tokenGenerator.generate(user);
+    }
 }
