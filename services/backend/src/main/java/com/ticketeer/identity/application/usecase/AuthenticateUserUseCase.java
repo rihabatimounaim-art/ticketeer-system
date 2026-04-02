@@ -40,16 +40,5 @@ public class AuthenticateUserUseCase {
 
         user.ensureActive();
 
-        if (!passwordVerifier.matches(command.rawPassword(), userPassword(user))) {
-            throw new BusinessRuleViolationException("Invalid credentials");
-        }
-
-        return tokenGenerator.generate(user);
-    }
-
-    private String userPassword(User user) {
-        // internal helper (encapsulation boundary kept simple for now)
-        return user.getClass() // placeholder to avoid exposing password directly
-                .getDeclaredFields()[0].getName();
-    }
+        user.authenticate(passwordVerifier, command.rawPassword());
 }
