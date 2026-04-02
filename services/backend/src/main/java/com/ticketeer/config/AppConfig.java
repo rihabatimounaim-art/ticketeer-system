@@ -1,0 +1,41 @@
+package com.ticketeer.config;
+
+import com.ticketeer.identity.application.port.PasswordVerifier;
+import com.ticketeer.identity.application.port.TokenGenerator;
+import com.ticketeer.identity.application.port.UserRepository;
+import com.ticketeer.identity.application.usecase.AuthenticateUserUseCase;
+import com.ticketeer.shared.domain.time.DomainClock;
+import com.ticketeer.ticketing.application.port.QrCodeGenerator;
+import com.ticketeer.ticketing.application.port.SignatureService;
+import com.ticketeer.ticketing.application.port.TicketRepository;
+import com.ticketeer.ticketing.application.usecase.IssueTicketUseCase;
+import com.ticketeer.control.application.port.ValidationRepository;
+import com.ticketeer.control.application.usecase.ValidateTicketUseCase;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfig {
+
+    @Bean
+    public AuthenticateUserUseCase authenticateUserUseCase(UserRepository userRepository,
+                                                           PasswordVerifier passwordVerifier,
+                                                           TokenGenerator tokenGenerator) {
+        return new AuthenticateUserUseCase(userRepository, passwordVerifier, tokenGenerator);
+    }
+
+    @Bean
+    public IssueTicketUseCase issueTicketUseCase(TicketRepository ticketRepository,
+                                                 QrCodeGenerator qrCodeGenerator,
+                                                 SignatureService signatureService,
+                                                 DomainClock clock) {
+        return new IssueTicketUseCase(ticketRepository, qrCodeGenerator, signatureService, clock);
+    }
+
+    @Bean
+    public ValidateTicketUseCase validateTicketUseCase(TicketRepository ticketRepository,
+                                                       ValidationRepository validationRepository,
+                                                       DomainClock clock) {
+        return new ValidateTicketUseCase(ticketRepository, validationRepository, clock);
+    }
+}
