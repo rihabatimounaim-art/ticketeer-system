@@ -20,22 +20,19 @@ public class JwtTokenGenerator implements TokenGenerator {
     @Override
     public String generate(final User user) {
         try {
-            final String headerJson = """
-                    {\"alg\":\"HS256\",\"typ\":\"JWT\"}
-                    """.trim();
+            final String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
 
             final long now = Instant.now().getEpochSecond();
             final long exp = now + jwtProperties.expirationSeconds();
 
-            final String payloadJson = """
-                    {\"sub\":\"%s\",\"role\":\"%s\",\"email\":\"%s\",\"iat\":%d,\"exp\":%d}
-                    """.formatted(
-                    user.getId().toString(),
-                    user.getRole().name(),
-                    user.getEmail(),
-                    now,
-                    exp
-            );
+            final String payloadJson = String.format(
+        "{\"sub\":\"%s\",\"role\":\"%s\",\"email\":\"%s\",\"iat\":%d,\"exp\":%d}",
+        user.getId().toString(),
+        user.getRole().name(),
+        user.getEmail(),
+        now,
+        exp
+);
 
             final String header = base64UrlEncode(headerJson.getBytes(StandardCharsets.UTF_8));
             final String payload = base64UrlEncode(payloadJson.getBytes(StandardCharsets.UTF_8));
