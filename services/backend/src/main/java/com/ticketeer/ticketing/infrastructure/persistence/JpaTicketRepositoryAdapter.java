@@ -7,11 +7,13 @@ import com.ticketeer.ticketing.domain.model.Ticket;
 import com.ticketeer.ticketing.domain.model.TicketId;
 import com.ticketeer.ticketing.domain.model.TicketStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Primary;
 
 import java.time.Instant;
 import java.util.Optional;
 
 @Component
+@Primary
 public class JpaTicketRepositoryAdapter implements TicketRepository {
 
     private final SpringDataTicketRepository repository;
