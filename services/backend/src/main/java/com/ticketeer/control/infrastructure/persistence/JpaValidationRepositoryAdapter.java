@@ -19,20 +19,19 @@ public class JpaValidationRepositoryAdapter implements ValidationRepository {
     public JpaValidationRepositoryAdapter(SpringDataValidationRepository repository) {
         this.repository = repository;
     }
+@Override
+public ValidationRecord save(ValidationRecord record) {
+    ValidationRecordEntity entity = new ValidationRecordEntity(
+            record.getId().getValue(),
+            record.getTicketId().getValue(),
+            record.getAgentId().getValue(),
+            record.getValidatedAt(),
+            record.getResult().name()
+    );
 
-    @Override
-    public ValidationRecord save(ValidationRecord record) {
-        ValidationRecordEntity entity = new ValidationRecordEntity(
-                record.getTicketId().getValue(),
-                record.getTicketId().getValue(),
-                record.getTicketId().getValue(),
-                record.getResult() != null ? java.time.Instant.now() : java.time.Instant.now(),
-                record.getResult().name()
-        );
-
-        ValidationRecordEntity saved = repository.save(entity);
-        return toDomain(saved);
-    }
+    ValidationRecordEntity saved = repository.save(entity);
+    return toDomain(saved);
+}
 
     @Override
     public List<ValidationRecord> findByTicketId(TicketId ticketId) {
