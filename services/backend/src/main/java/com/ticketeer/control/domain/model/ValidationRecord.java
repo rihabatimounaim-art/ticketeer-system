@@ -7,9 +7,6 @@ import com.ticketeer.ticketing.domain.model.TicketId;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * Represents a control operation performed by an agent.
- */
 public class ValidationRecord {
 
     private final ValidationId id;
@@ -38,11 +35,24 @@ public class ValidationRecord {
         this.result = result;
     }
 
+    public ValidationId getId() {
+        return id;
+    }
+
+    public TicketId getTicketId() {
+        return ticketId;
+    }
+
+    public UserId getAgentId() {
+        return agentId;
+    }
+
+    public Instant getValidatedAt() {
+        return validatedAt;
+    }
+
     public ValidationResult getResult() {
         return result;
-    }
-    public TicketId getTicketId() {
-    return ticketId;
     }
 
     @Override
