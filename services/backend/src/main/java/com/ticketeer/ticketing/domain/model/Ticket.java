@@ -10,6 +10,8 @@ import java.util.Objects;
 /**
  * Ticket aggregate root.
  */
+public DateRange getValidityWindow()
+public Instant getIssuedAt()
 public class Ticket {
 
     private final TicketId id;
