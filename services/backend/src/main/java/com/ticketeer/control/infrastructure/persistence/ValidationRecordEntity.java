@@ -30,11 +30,13 @@ public class ValidationRecordEntity {
     protected ValidationRecordEntity() {
     }
 
-    public ValidationRecordEntity(UUID id,
-                                  UUID ticketId,
-                                  UUID agentId,
-                                  Instant validatedAt,
-                                  String result) {
+    public ValidationRecordEntity(
+            final UUID id,
+            final UUID ticketId,
+            final UUID agentId,
+            final Instant validatedAt,
+            final String result
+    ) {
         this.id = id;
         this.ticketId = ticketId;
         this.agentId = agentId;
@@ -60,16 +62,5 @@ public class ValidationRecordEntity {
 
     public String getResult() {
         return result;
-    }
-    public ValidationId getId() {
-    return id;
-    }
-
-    public UserId getAgentId() {
-    return agentId;
-    }
-
-    public Instant getValidatedAt() {
-    return validatedAt;
     }
 }
