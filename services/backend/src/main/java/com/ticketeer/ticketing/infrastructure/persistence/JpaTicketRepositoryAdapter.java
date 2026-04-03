@@ -8,44 +8,46 @@ import com.ticketeer.ticketing.domain.model.TicketId;
 import com.ticketeer.ticketing.domain.model.TicketStatus;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 public class JpaTicketRepositoryAdapter implements TicketRepository {
 
     private final SpringDataTicketRepository repository;
 
-    public JpaTicketRepositoryAdapter(SpringDataTicketRepository repository) {
+    public JpaTicketRepositoryAdapter(final SpringDataTicketRepository repository) {
         this.repository = repository;
     }
 
     @Override
-    public Ticket save(Ticket ticket) {
-        TicketEntity entity = new TicketEntity(
-                UUID.fromString(ticket.getId().toString()),
-                UUID.fromString(ticket.getHolderId().toString()),
-                ticketValidityStart(ticket),
-                ticketValidityEnd(ticket),
+    public Ticket save(final Ticket ticket) {
+        final DateRange validityWindow = ticket.getValidityWindow();
+        final Instant issuedAt = ticket.getIssuedAt();
+
+        final TicketEntity entity = new TicketEntity(
+                ticket.getId().getValue(),
+                ticket.getHolderId().getValue(),
+                validityWindow.getStart(),
+                validityWindow.getEnd(),
                 ticket.getStatus().name(),
-                ticketIssuedAt(ticket)
+                issuedAt
         );
 
-        TicketEntity saved = repository.save(entity);
-
+        final TicketEntity saved = repository.save(entity);
         return toDomain(saved);
     }
 
     @Override
-    public Optional<Ticket> findById(TicketId ticketId) {
-        return repository.findById(UUID.fromString(ticketId.toString()))
+    public Optional<Ticket> findById(final TicketId ticketId) {
+        return repository.findById(ticketId.getValue())
                 .map(this::toDomain);
     }
 
-    private Ticket toDomain(TicketEntity entity) {
-        Ticket ticket = new Ticket(
-                new TicketId(entity.getId().toString()),
-                new UserId(entity.getHolderId().toString()),
+    private Ticket toDomain(final TicketEntity entity) {
+        final Ticket ticket = new Ticket(
+                new TicketId(entity.getId()),
+                new UserId(entity.getHolderId()),
                 new DateRange(entity.getValidFrom(), entity.getValidUntil()),
                 entity.getIssuedAt()
         );
@@ -55,33 +57,5 @@ public class JpaTicketRepositoryAdapter implements TicketRepository {
         }
 
         return ticket;
-    }
-
-    private java.time.Instant ticketValidityStart(Ticket ticket) {
-        return ticket.getClass() != null ? ticketValidityWindow(ticket).start() : null;
-    }
-
-    private java.time.Instant ticketValidityEnd(Ticket ticket) {
-        return ticket.getClass() != null ? ticketValidityWindow(ticket).end() : null;
-    }
-
-    private DateRange ticketValidityWindow(Ticket ticket) {
-        try {
-            var field = Ticket.class.getDeclaredField("validityWindow");
-            field.setAccessible(true);
-            return (DateRange) field.get(ticket);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private java.time.Instant ticketIssuedAt(Ticket ticket) {
-        try {
-            var field = Ticket.class.getDeclaredField("issuedAt");
-            field.setAccessible(true);
-            return (java.time.Instant) field.get(ticket);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }
