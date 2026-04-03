@@ -10,8 +10,6 @@ import java.util.Objects;
 /**
  * Ticket aggregate root.
  */
-public DateRange getValidityWindow()
-public Instant getIssuedAt()
 public class Ticket {
 
     private final TicketId id;
@@ -44,6 +42,14 @@ public class Ticket {
 
     public UserId getHolderId() {
         return holderId;
+    }
+
+    public DateRange getValidityWindow() {
+        return validityWindow;
+    }
+
+    public Instant getIssuedAt() {
+        return issuedAt;
     }
 
     public TicketStatus getStatus() {
