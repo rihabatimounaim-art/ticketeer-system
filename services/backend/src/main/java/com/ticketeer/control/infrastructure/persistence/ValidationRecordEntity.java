@@ -61,4 +61,15 @@ public class ValidationRecordEntity {
     public String getResult() {
         return result;
     }
+    public ValidationId getId() {
+    return id;
+    }
+
+    public UserId getAgentId() {
+    return agentId;
+    }
+
+    public Instant getValidatedAt() {
+    return validatedAt;
+    }
 }
