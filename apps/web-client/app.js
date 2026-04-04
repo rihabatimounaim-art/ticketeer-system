@@ -63,7 +63,8 @@ document.getElementById("loginBtn").onclick = async () => {
 
     token = data.token;
     setStatus("loginStatus", "Login successful.", "success");
-    setOutput("loginResult", data);
+    //setOutput("loginResult", data); pour ne plus afficher le token 
+    setOutput("loginResult", "Token received successfully.");
     updateConnectionState();
   } catch (error) {
     setStatus("loginStatus", "Login successful.", "success");
