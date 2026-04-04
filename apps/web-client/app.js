@@ -62,11 +62,11 @@ document.getElementById("loginBtn").onclick = async () => {
     }
 
     token = data.token;
-    setStatus("loginStatus", "Login successful.");
+    setStatus("loginStatus", "Login successful.", "success");
     setOutput("loginResult", data);
     updateConnectionState();
   } catch (error) {
-    setStatus("loginStatus", "Login failed.");
+    setStatus("loginStatus", "Login successful.", "success");
     setOutput("loginResult", `Error: ${error.message}`);
   }
 };
@@ -101,10 +101,14 @@ document.getElementById("createTicketBtn").onclick = async () => {
       document.getElementById("ticketId").value = data.ticketId;
     }
 
-    setStatus("ticketStatus", `Ticket created successfully (${data.status}).`);
+    setStatus(
+  "ticketStatus",
+  `Ticket created successfully (${data.status}).`,
+  "success"
+);
     setOutput("ticketResult", data);
   } catch (error) {
-    setStatus("ticketStatus", "Ticket creation failed.");
+    setStatus("ticketStatus", "Ticket creation failed.", "error");
     setOutput("ticketResult", `Error: ${error.message}`);
   }
 };
@@ -134,10 +138,19 @@ document.getElementById("validateTicketBtn").onclick = async () => {
       throw new Error(data.message || "Ticket validation failed");
     }
 
-    setStatus("controlStatus", formatValidationMessage(data.result));
+    let type = "info";
+
+if (data.result === "VALID") type = "success";
+if (data.result === "EXPIRED" || data.result === "INVALID") type = "error";
+
+setStatus(
+  "controlStatus",
+  formatValidationMessage(data.result),
+  type
+);
     setOutput("controlResult", data);
   } catch (error) {
-    setStatus("controlStatus", "Ticket validation failed.");
+    setStatus("controlStatus", "Ticket validation failed.", "error");
     setOutput("controlResult", `Error: ${error.message}`);
   }
 };
