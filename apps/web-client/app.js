@@ -6,8 +6,10 @@ const setOutput = (id, data) => {
     typeof data === "string" ? data : JSON.stringify(data, null, 2);
 };
 
-const setStatus = (id, text) => {
-  document.getElementById(id).innerText = text;
+const setStatus = (id, text, type = "info") => {
+  const el = document.getElementById(id);
+  el.innerText = text;
+  el.className = `status-line ${type}`;
 };
 
 const requireToken = () => {
