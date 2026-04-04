@@ -3,6 +3,7 @@ package com.ticketeer.bootstrap;
 import com.ticketeer.identity.infrastructure.persistence.SpringDataUserRepository;
 import com.ticketeer.identity.infrastructure.persistence.UserEntity;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -11,9 +12,12 @@ import java.util.UUID;
 public class DataInitializer implements CommandLineRunner {
 
     private final SpringDataUserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(final SpringDataUserRepository userRepository) {
+    public DataInitializer(final SpringDataUserRepository userRepository,
+                           final PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -24,7 +28,7 @@ public class DataInitializer implements CommandLineRunner {
                     "Admin",
                     "Ticketeer",
                     "admin@ticketeer.com",
-                    "admin123",
+                    passwordEncoder.encode("admin123"),
                     "ADMIN",
                     true
             );
