@@ -81,3 +81,17 @@ pre {
   color: #666;
   margin-top: 8px;
 }
+.success {
+  color: #1e7e34;
+  font-weight: bold;
+}
+
+.error {
+  color: #c0392b;
+  font-weight: bold;
+}
+
+.info {
+  color: #2f80ed;
+  font-weight: bold;
+}
