@@ -63,11 +63,10 @@ document.getElementById("loginBtn").onclick = async () => {
 
     token = data.token;
     setStatus("loginStatus", "Login successful.", "success");
-    //setOutput("loginResult", data); pour ne plus afficher le token 
     setOutput("loginResult", "Token received successfully.");
     updateConnectionState();
   } catch (error) {
-    setStatus("loginStatus", "Login successful.", "success");
+    setStatus("loginStatus", "Login failed.", "error");
     setOutput("loginResult", `Error: ${error.message}`);
   }
 };
@@ -103,11 +102,14 @@ document.getElementById("createTicketBtn").onclick = async () => {
     }
 
     setStatus(
-  "ticketStatus",
-  `Ticket created successfully (${data.status}).`,
-  "success"
-);
-    setOutput("ticketResult", data);
+      "ticketStatus",
+      `Ticket created successfully (${data.status}).`,
+      "success"
+    );
+    setOutput(
+      "ticketResult",
+      `Ticket ID: ${data.ticketId}\nStatus: ${data.status}`
+    );
   } catch (error) {
     setStatus("ticketStatus", "Ticket creation failed.", "error");
     setOutput("ticketResult", `Error: ${error.message}`);
@@ -140,16 +142,18 @@ document.getElementById("validateTicketBtn").onclick = async () => {
     }
 
     let type = "info";
+    if (data.result === "VALID") type = "success";
+    if (data.result === "EXPIRED" || data.result === "INVALID") type = "error";
 
-if (data.result === "VALID") type = "success";
-if (data.result === "EXPIRED" || data.result === "INVALID") type = "error";
-
-setStatus(
-  "controlStatus",
-  formatValidationMessage(data.result),
-  type
-);
-    setOutput("controlResult", data);
+    setStatus(
+      "controlStatus",
+      formatValidationMessage(data.result),
+      type
+    );
+    setOutput(
+      "controlResult",
+      `Validation result: ${data.result}`
+    );
   } catch (error) {
     setStatus("controlStatus", "Ticket validation failed.", "error");
     setOutput("controlResult", `Error: ${error.message}`);
