@@ -6,6 +6,10 @@ const setOutput = (id, data) => {
     typeof data === "string" ? data : JSON.stringify(data, null, 2);
 };
 
+const setStatus = (id, text) => {
+  document.getElementById(id).innerText = text;
+};
+
 const requireToken = () => {
   if (!token) {
     throw new Error("You must login first.");
@@ -15,14 +19,30 @@ const requireToken = () => {
 const updateConnectionState = () => {
   const badge = document.getElementById("connectionState");
   badge.innerText = token ? "Connected" : "Not connected";
-  badge.style.background = token ? "green" : "red";
-  badge.style.color = "white";
-  badge.style.padding = "5px";
+  badge.className = token ? "badge connected" : "badge disconnected";
+};
+
+const formatValidationMessage = (result) => {
+  switch (result) {
+    case "VALID":
+      return "Ticket validation succeeded.";
+    case "EXPIRED":
+      return "Ticket exists, but it is expired.";
+    case "ALREADY_USED":
+      return "Ticket has already been used.";
+    case "INVALID":
+      return "Ticket is invalid.";
+    default:
+      return `Validation result: ${result}`;
+  }
 };
 
 updateConnectionState();
 
 document.getElementById("loginBtn").onclick = async () => {
+  setStatus("loginStatus", "Logging in...");
+  setOutput("loginResult", "");
+
   try {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -40,15 +60,19 @@ document.getElementById("loginBtn").onclick = async () => {
     }
 
     token = data.token;
+    setStatus("loginStatus", "Login successful.");
     setOutput("loginResult", data);
     updateConnectionState();
-
-  } catch (e) {
-    setOutput("loginResult", "❌ " + e.message);
+  } catch (error) {
+    setStatus("loginStatus", "Login failed.");
+    setOutput("loginResult", `Error: ${error.message}`);
   }
 };
 
 document.getElementById("createTicketBtn").onclick = async () => {
+  setStatus("ticketStatus", "Creating ticket...");
+  setOutput("ticketResult", "");
+
   try {
     requireToken();
 
@@ -71,18 +95,22 @@ document.getElementById("createTicketBtn").onclick = async () => {
       throw new Error(data.message || "Ticket creation failed");
     }
 
-    setOutput("ticketResult", data);
-
     if (data.ticketId) {
       document.getElementById("ticketId").value = data.ticketId;
     }
 
-  } catch (e) {
-    setOutput("ticketResult", "❌ " + e.message);
+    setStatus("ticketStatus", `Ticket created successfully (${data.status}).`);
+    setOutput("ticketResult", data);
+  } catch (error) {
+    setStatus("ticketStatus", "Ticket creation failed.");
+    setOutput("ticketResult", `Error: ${error.message}`);
   }
 };
 
 document.getElementById("validateTicketBtn").onclick = async () => {
+  setStatus("controlStatus", "Validating ticket...");
+  setOutput("controlResult", "");
+
   try {
     requireToken();
 
@@ -101,12 +129,13 @@ document.getElementById("validateTicketBtn").onclick = async () => {
     const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(data.message || "Validation failed");
+      throw new Error(data.message || "Ticket validation failed");
     }
 
+    setStatus("controlStatus", formatValidationMessage(data.result));
     setOutput("controlResult", data);
-
-  } catch (e) {
-    setOutput("controlResult", "❌ " + e.message);
+  } catch (error) {
+    setStatus("controlStatus", "Ticket validation failed.");
+    setOutput("controlResult", `Error: ${error.message}`);
   }
 };
