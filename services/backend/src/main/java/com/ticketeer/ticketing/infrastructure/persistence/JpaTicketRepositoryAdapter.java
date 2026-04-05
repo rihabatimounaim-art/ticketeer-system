@@ -6,10 +6,11 @@ import com.ticketeer.ticketing.application.port.TicketRepository;
 import com.ticketeer.ticketing.domain.model.Ticket;
 import com.ticketeer.ticketing.domain.model.TicketId;
 import com.ticketeer.ticketing.domain.model.TicketStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -46,18 +47,21 @@ public class JpaTicketRepositoryAdapter implements TicketRepository {
                 .map(this::toDomain);
     }
 
+    @Override
+    public List<Ticket> findByHolderId(final UserId holderId) {
+        return repository.findByHolderId(holderId.getValue())
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private Ticket toDomain(final TicketEntity entity) {
-        final Ticket ticket = new Ticket(
+        return Ticket.rehydrate(
                 new TicketId(entity.getId()),
                 new UserId(entity.getHolderId()),
                 new DateRange(entity.getValidFrom(), entity.getValidUntil()),
-                entity.getIssuedAt()
+                entity.getIssuedAt(),
+                TicketStatus.valueOf(entity.getStatus())
         );
-
-        if (TicketStatus.valueOf(entity.getStatus()) == TicketStatus.VALID) {
-            ticket.activate();
-        }
-
-        return ticket;
     }
 }
