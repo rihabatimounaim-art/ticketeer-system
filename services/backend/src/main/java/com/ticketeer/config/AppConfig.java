@@ -17,10 +17,12 @@ import com.ticketeer.control.application.port.ValidationRepository;
 import com.ticketeer.control.application.usecase.ValidateTicketUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.ticketeer.ticketing.application.usecase.GetMyTicketsUseCase;
 
 @Configuration
 public class AppConfig {
 
+    
     @Bean
     public AuthenticateUserUseCase authenticateUserUseCase(UserRepository userRepository,
                                                            PasswordVerifier passwordVerifier,
@@ -35,7 +37,11 @@ public class AppConfig {
                                                  DomainClock clock) {
         return new IssueTicketUseCase(ticketRepository, qrCodeGenerator, signatureService, clock);
     }
-
+    
+    @Bean
+    public GetMyTicketsUseCase getMyTicketsUseCase(TicketRepository ticketRepository) {
+         return new GetMyTicketsUseCase(ticketRepository);
+    }
     @Bean
     public ValidateTicketUseCase validateTicketUseCase(TicketRepository ticketRepository,
                                                        ValidationRepository validationRepository,
