@@ -36,6 +36,22 @@ public class Ticket {
         this.status = TicketStatus.CREATED;
     }
 
+    public static Ticket rehydrate(
+            final TicketId id,
+            final UserId holderId,
+            final DateRange validityWindow,
+            final Instant issuedAt,
+            final TicketStatus status
+    ) {
+        if (status == null) {
+            throw new BusinessRuleViolationException("Status is required");
+        }
+
+        final Ticket ticket = new Ticket(id, holderId, validityWindow, issuedAt);
+        ticket.status = status;
+        return ticket;
+    }
+
     public TicketId getId() {
         return id;
     }
