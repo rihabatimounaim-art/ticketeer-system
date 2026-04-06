@@ -15,6 +15,11 @@ public class Ticket {
     private final TicketId id;
     private final UserId holderId;
     private final DateRange validityWindow;
+    private final String departureStationCode;
+    private final String arrivalStationCode;
+    private final Instant departureTime;
+    private final Instant arrivalTime;
+    private final double price;
     private TicketStatus status;
     private final Instant issuedAt;
 
@@ -22,16 +27,34 @@ public class Ticket {
             final TicketId id,
             final UserId holderId,
             final DateRange validityWindow,
+            final String departureStationCode,
+            final String arrivalStationCode,
+            final Instant departureTime,
+            final Instant arrivalTime,
+            final double price,
             final Instant issuedAt
     ) {
         if (id == null) throw new BusinessRuleViolationException("TicketId is required");
         if (holderId == null) throw new BusinessRuleViolationException("HolderId is required");
         if (validityWindow == null) throw new BusinessRuleViolationException("Validity window is required");
+        if (departureStationCode == null || departureStationCode.isBlank()) {
+            throw new BusinessRuleViolationException("Departure station code is required");
+        }
+        if (arrivalStationCode == null || arrivalStationCode.isBlank()) {
+            throw new BusinessRuleViolationException("Arrival station code is required");
+        }
+        if (departureTime == null) throw new BusinessRuleViolationException("Departure time is required");
+        if (arrivalTime == null) throw new BusinessRuleViolationException("Arrival time is required");
         if (issuedAt == null) throw new BusinessRuleViolationException("IssuedAt is required");
 
         this.id = id;
         this.holderId = holderId;
         this.validityWindow = validityWindow;
+        this.departureStationCode = departureStationCode;
+        this.arrivalStationCode = arrivalStationCode;
+        this.departureTime = departureTime;
+        this.arrivalTime = arrivalTime;
+        this.price = price;
         this.issuedAt = issuedAt;
         this.status = TicketStatus.CREATED;
     }
@@ -40,6 +63,11 @@ public class Ticket {
             final TicketId id,
             final UserId holderId,
             final DateRange validityWindow,
+            final String departureStationCode,
+            final String arrivalStationCode,
+            final Instant departureTime,
+            final Instant arrivalTime,
+            final double price,
             final Instant issuedAt,
             final TicketStatus status
     ) {
@@ -47,7 +75,17 @@ public class Ticket {
             throw new BusinessRuleViolationException("Status is required");
         }
 
-        final Ticket ticket = new Ticket(id, holderId, validityWindow, issuedAt);
+        final Ticket ticket = new Ticket(
+                id,
+                holderId,
+                validityWindow,
+                departureStationCode,
+                arrivalStationCode,
+                departureTime,
+                arrivalTime,
+                price,
+                issuedAt
+        );
         ticket.status = status;
         return ticket;
     }
@@ -62,6 +100,26 @@ public class Ticket {
 
     public DateRange getValidityWindow() {
         return validityWindow;
+    }
+
+    public String getDepartureStationCode() {
+        return departureStationCode;
+    }
+
+    public String getArrivalStationCode() {
+        return arrivalStationCode;
+    }
+
+    public Instant getDepartureTime() {
+        return departureTime;
+    }
+
+    public Instant getArrivalTime() {
+        return arrivalTime;
+    }
+
+    public double getPrice() {
+        return price;
     }
 
     public Instant getIssuedAt() {
