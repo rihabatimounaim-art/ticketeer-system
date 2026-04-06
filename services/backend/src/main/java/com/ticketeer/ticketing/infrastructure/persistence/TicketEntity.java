@@ -25,6 +25,21 @@ public class TicketEntity {
     private Instant validUntil;
 
     @Column(nullable = false)
+    private String departureStationCode;
+
+    @Column(nullable = false)
+    private String arrivalStationCode;
+
+    @Column(nullable = false)
+    private Instant departureTime;
+
+    @Column(nullable = false)
+    private Instant arrivalTime;
+
+    @Column(nullable = false)
+    private double price;
+
+    @Column(nullable = false)
     private String status;
 
     @Column(nullable = false)
@@ -37,12 +52,22 @@ public class TicketEntity {
                         UUID holderId,
                         Instant validFrom,
                         Instant validUntil,
+                        String departureStationCode,
+                        String arrivalStationCode,
+                        Instant departureTime,
+                        Instant arrivalTime,
+                        double price,
                         String status,
                         Instant issuedAt) {
         this.id = id;
         this.holderId = holderId;
         this.validFrom = validFrom;
         this.validUntil = validUntil;
+        this.departureStationCode = departureStationCode;
+        this.arrivalStationCode = arrivalStationCode;
+        this.departureTime = departureTime;
+        this.arrivalTime = arrivalTime;
+        this.price = price;
         this.status = status;
         this.issuedAt = issuedAt;
     }
@@ -61,6 +86,26 @@ public class TicketEntity {
 
     public Instant getValidUntil() {
         return validUntil;
+    }
+
+    public String getDepartureStationCode() {
+        return departureStationCode;
+    }
+
+    public String getArrivalStationCode() {
+        return arrivalStationCode;
+    }
+
+    public Instant getDepartureTime() {
+        return departureTime;
+    }
+
+    public Instant getArrivalTime() {
+        return arrivalTime;
+    }
+
+    public double getPrice() {
+        return price;
     }
 
     public String getStatus() {
