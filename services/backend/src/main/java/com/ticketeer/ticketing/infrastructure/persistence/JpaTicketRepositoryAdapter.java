@@ -33,6 +33,11 @@ public class JpaTicketRepositoryAdapter implements TicketRepository {
                 ticket.getHolderId().getValue(),
                 validityWindow.getStart(),
                 validityWindow.getEnd(),
+                ticket.getDepartureStationCode(),
+                ticket.getArrivalStationCode(),
+                ticket.getDepartureTime(),
+                ticket.getArrivalTime(),
+                ticket.getPrice(),
                 ticket.getStatus().name(),
                 issuedAt
         );
@@ -60,6 +65,11 @@ public class JpaTicketRepositoryAdapter implements TicketRepository {
                 new TicketId(entity.getId()),
                 new UserId(entity.getHolderId()),
                 new DateRange(entity.getValidFrom(), entity.getValidUntil()),
+                entity.getDepartureStationCode(),
+                entity.getArrivalStationCode(),
+                entity.getDepartureTime(),
+                entity.getArrivalTime(),
+                entity.getPrice(),
                 entity.getIssuedAt(),
                 TicketStatus.valueOf(entity.getStatus())
         );
