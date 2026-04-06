@@ -1,5 +1,7 @@
 package com.ticketeer.config;
 
+import com.ticketeer.ticketing.infrastructure.HmacSignatureService;
+import com.ticketeer.ticketing.infrastructure.TicketQrProperties;
 import com.ticketeer.identity.infrastructure.JwtProperties;
 import com.ticketeer.identity.infrastructure.JwtTokenGenerator;
 import com.ticketeer.shared.infrastructure.SystemDomainClock;
@@ -21,6 +23,18 @@ import com.ticketeer.ticketing.application.usecase.GetMyTicketsUseCase;
 
 @Configuration
 public class AppConfig {
+    @Bean
+public TicketQrProperties ticketQrProperties(
+        @Value("${ticketing.qr.secret}") String secret
+) {
+    return new TicketQrProperties(secret);
+}
+
+@Bean
+@Primary
+public SignatureService signatureService(TicketQrProperties ticketQrProperties) {
+    return new HmacSignatureService(ticketQrProperties);
+}
 
     
     @Bean
