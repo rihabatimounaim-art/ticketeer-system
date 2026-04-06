@@ -47,6 +47,8 @@ navLinks.forEach((btn) => {
 });
 
 document.getElementById("userBadge").innerText = `${role} • ${email}`;
+
+/* Hide Control for non-admin / non-agent users */
 if (role !== "ADMIN" && role !== "AGENT") {
   const controlNavButton = document.querySelector('[data-section="controlSection"]');
   const controlSection = document.getElementById("controlSection");
@@ -95,28 +97,41 @@ document.getElementById("searchTripsBtn").onclick = async () => {
 
     container.className = "trip-list";
     container.innerHTML = data.map(trip => `
-  <div class="trip-card">
-    <div class="trip-card-left">
-      <div class="trip-route">🚆 ${trip.from} → ${trip.to}</div>
-      <div class="trip-time">${trip.departureTime} → ${trip.arrivalTime}</div>
-      <div class="trip-badges">
-        <span class="trip-badge">Direct trip</span>
-        <span class="trip-badge">Date: ${trip.departureTime.slice(0, 10)}</span>
+      <div class="trip-card">
+        <div class="trip-card-left">
+          <div class="trip-route">🚆 ${trip.from} → ${trip.to}</div>
+          <div class="trip-time">${trip.departureTime} → ${trip.arrivalTime}</div>
+          <div class="trip-badges">
+            <span class="trip-badge">Direct trip</span>
+            <span class="trip-badge">Date: ${trip.departureTime.slice(0, 10)}</span>
+          </div>
+        </div>
+        <div class="trip-card-right">
+          <div class="trip-price">${trip.price} €</div>
+          <button class="btn btn-primary" onclick='selectTripForBooking(${JSON.stringify(trip)})'>
+            Book this trip
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="trip-card-right">
-      <div class="trip-price">${trip.price} €</div>
-      <button class="btn btn-primary" onclick='selectTripForBooking(${JSON.stringify(trip)})'>
-        Book this trip
-      </button>
-    </div>
-  </div>
-`).join("");
+    `).join("");
 
     setStatus("tripSearchStatus", `${data.length} trip(s) found.`, "success");
   } catch (error) {
     setStatus("tripSearchStatus", error.message, "error");
   }
+};
+
+window.selectTripForBooking = (trip) => {
+  document.getElementById("validFrom").value = trip.departureTime;
+  document.getElementById("validUntil").value = trip.arrivalTime;
+
+  setStatus(
+    "ticketStatus",
+    `Trip selected: ${trip.from} → ${trip.to}. You can now create the ticket.`,
+    "info"
+  );
+
+  document.querySelector('[data-section="ticketsSection"]').click();
 };
 
 const loadMyTickets = async () => {
@@ -156,7 +171,9 @@ const loadMyTickets = async () => {
         <div class="ticket-actions">
           <button class="btn btn-secondary" onclick="downloadQr('${ticket.ticketId}')">Download QR</button>
           <button class="btn btn-primary" onclick="downloadPdf('${ticket.ticketId}')">Download PDF</button>
-          <button class="btn btn-ghost" onclick="fillControlTicket('${ticket.ticketId}')">Use for control</button>
+          ${(role === "ADMIN" || role === "AGENT")
+            ? `<button class="btn btn-ghost" onclick="fillControlTicket('${ticket.ticketId}')">Use for control</button>`
+            : ""}
         </div>
       </div>
     `).join("");
@@ -236,58 +253,56 @@ window.downloadPdf = async (ticketId) => {
 };
 
 window.fillControlTicket = (ticketId) => {
-  document.getElementById("controlTicketId").value = ticketId;
-  document.querySelector('[data-section="controlSection"]').click();
-};
-
-document.getElementById("validateTicketBtn").onclick = async () => {
-  setStatus("controlStatus", "Validating ticket...", "info");
-
-  try {
-    const ticketId = document.getElementById("controlTicketId").value.trim();
-
-    const res = await fetch(`${API_BASE}/control/validate`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ ticketId })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || "Ticket validation failed");
-    }
-
-    const card = document.getElementById("controlResultCard");
-    card.classList.remove("hidden");
-
-    let cardClass = "result-card info-card";
-    if (data.result === "VALID") cardClass = "result-card success-card";
-    if (data.result === "EXPIRED" || data.result === "INVALID") cardClass = "result-card error-card";
-
-    card.className = cardClass;
-    card.innerHTML = `<strong>Validation result:</strong> ${data.result}`;
-
-    let type = "info";
-    if (data.result === "VALID") type = "success";
-    if (data.result === "EXPIRED" || data.result === "INVALID") type = "error";
-
-    setStatus("controlStatus", "Validation completed.", type);
-  } catch (error) {
-    setStatus("controlStatus", error.message, "error");
+  const input = document.getElementById("controlTicketId");
+  if (input) {
+    input.value = ticketId;
   }
-  window.selectTripForBooking = (trip) => {
-  document.getElementById("validFrom").value = trip.departureTime;
-  document.getElementById("validUntil").value = trip.arrivalTime;
 
-  setStatus(
-    "ticketStatus",
-    `Trip selected: ${trip.from} → ${trip.to}. You can now create the ticket.`,
-    "info"
-  );
+  const controlNavButton = document.querySelector('[data-section="controlSection"]');
+  if (controlNavButton) {
+    controlNavButton.click();
+  }
+};
 
-  document.querySelector('[data-section="ticketsSection"]').click();
-};
-};
+const validateBtn = document.getElementById("validateTicketBtn");
+if (validateBtn) {
+  validateBtn.onclick = async () => {
+    setStatus("controlStatus", "Validating ticket...", "info");
+
+    try {
+      const ticketId = document.getElementById("controlTicketId").value.trim();
+
+      const res = await fetch(`${API_BASE}/control/validate`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ ticketId })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Ticket validation failed");
+      }
+
+      const card = document.getElementById("controlResultCard");
+      card.classList.remove("hidden");
+
+      let cardClass = "result-card info-card";
+      if (data.result === "VALID") cardClass = "result-card success-card";
+      if (data.result === "EXPIRED" || data.result === "INVALID") cardClass = "result-card error-card";
+
+      card.className = cardClass;
+      card.innerHTML = `<strong>Validation result:</strong> ${data.result}`;
+
+      let type = "info";
+      if (data.result === "VALID") type = "success";
+      if (data.result === "EXPIRED" || data.result === "INVALID") type = "error";
+
+      setStatus("controlStatus", "Validation completed.", type);
+    } catch (error) {
+      setStatus("controlStatus", error.message, "error");
+    }
+  };
+}
 
 loadMyTickets();
