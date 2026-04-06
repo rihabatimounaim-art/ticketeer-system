@@ -1,7 +1,5 @@
 package com.ticketeer.config;
 
-import com.ticketeer.ticketing.application.port.QrImageGenerator;
-import com.ticketeer.ticketing.infrastructure.ZxingQrImageGenerator;
 import com.ticketeer.control.application.port.ValidationRepository;
 import com.ticketeer.control.application.usecase.ValidateTicketUseCase;
 import com.ticketeer.identity.application.port.PasswordVerifier;
@@ -12,19 +10,23 @@ import com.ticketeer.identity.infrastructure.JwtProperties;
 import com.ticketeer.identity.infrastructure.JwtTokenGenerator;
 import com.ticketeer.shared.domain.time.DomainClock;
 import com.ticketeer.shared.infrastructure.SystemDomainClock;
+import com.ticketeer.ticketing.application.port.PdfTicketGenerator;
 import com.ticketeer.ticketing.application.port.QrCodeGenerator;
+import com.ticketeer.ticketing.application.port.QrImageGenerator;
 import com.ticketeer.ticketing.application.port.SignatureService;
 import com.ticketeer.ticketing.application.port.TicketRepository;
+import com.ticketeer.ticketing.application.usecase.GenerateTicketPdfUseCase;
+import com.ticketeer.ticketing.application.usecase.GenerateTicketQrUseCase;
 import com.ticketeer.ticketing.application.usecase.GetMyTicketsUseCase;
 import com.ticketeer.ticketing.application.usecase.IssueTicketUseCase;
 import com.ticketeer.ticketing.infrastructure.HmacSignatureService;
+import com.ticketeer.ticketing.infrastructure.OpenPdfTicketGenerator;
 import com.ticketeer.ticketing.infrastructure.TicketQrProperties;
+import com.ticketeer.ticketing.infrastructure.ZxingQrImageGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import com.ticketeer.ticketing.application.port.QrImageGenerator;
-import com.ticketeer.ticketing.application.usecase.GenerateTicketQrUseCase;
 
 @Configuration
 public class AppConfig {
@@ -93,17 +95,35 @@ public class AppConfig {
     }
 
     @Bean
-    public GenerateTicketQrUseCase generateTicketQrUseCase(TicketRepository ticketRepository,
-                                                       SignatureService signatureService,
-                                                       QrCodeGenerator qrCodeGenerator,
-                                                       QrImageGenerator qrImageGenerator) {
-    return new GenerateTicketQrUseCase(
-            ticketRepository,
-            signatureService,
-            qrCodeGenerator,
-            qrImageGenerator
-    );
+    public PdfTicketGenerator pdfTicketGenerator() {
+        return new OpenPdfTicketGenerator();
     }
 
-    
+    @Bean
+    public GenerateTicketQrUseCase generateTicketQrUseCase(TicketRepository ticketRepository,
+                                                           SignatureService signatureService,
+                                                           QrCodeGenerator qrCodeGenerator,
+                                                           QrImageGenerator qrImageGenerator) {
+        return new GenerateTicketQrUseCase(
+                ticketRepository,
+                signatureService,
+                qrCodeGenerator,
+                qrImageGenerator
+        );
+    }
+
+    @Bean
+    public GenerateTicketPdfUseCase generateTicketPdfUseCase(TicketRepository ticketRepository,
+                                                             SignatureService signatureService,
+                                                             QrCodeGenerator qrCodeGenerator,
+                                                             QrImageGenerator qrImageGenerator,
+                                                             PdfTicketGenerator pdfTicketGenerator) {
+        return new GenerateTicketPdfUseCase(
+                ticketRepository,
+                signatureService,
+                qrCodeGenerator,
+                qrImageGenerator,
+                pdfTicketGenerator
+        );
+    }
 }
