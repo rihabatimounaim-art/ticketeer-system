@@ -1,5 +1,6 @@
 package com.ticketeer.config;
 
+import org.springframework.context.annotation.Primary;
 import com.ticketeer.ticketing.infrastructure.HmacSignatureService;
 import com.ticketeer.ticketing.infrastructure.TicketQrProperties;
 import com.ticketeer.identity.infrastructure.JwtProperties;
