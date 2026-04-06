@@ -47,6 +47,18 @@ navLinks.forEach((btn) => {
 });
 
 document.getElementById("userBadge").innerText = `${role} • ${email}`;
+if (role !== "ADMIN" && role !== "AGENT") {
+  const controlNavButton = document.querySelector('[data-section="controlSection"]');
+  const controlSection = document.getElementById("controlSection");
+
+  if (controlNavButton) {
+    controlNavButton.style.display = "none";
+  }
+
+  if (controlSection) {
+    controlSection.style.display = "none";
+  }
+}
 
 document.getElementById("logoutBtn").onclick = () => {
   localStorage.removeItem("ticketeer_token");
