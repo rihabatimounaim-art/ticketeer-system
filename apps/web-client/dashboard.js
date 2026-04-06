@@ -27,6 +27,12 @@ const setStatus = (id, text, type = "info") => {
   el.className = `status-line ${type}`;
 };
 
+const getStatusBadgeClass = (status) => {
+  if (status === "VALID") return "status-badge status-valid";
+  if (status === "EXPIRED") return "status-badge status-expired";
+  return "status-badge status-default";
+};
+
 const sections = document.querySelectorAll(".content-section");
 const navLinks = document.querySelectorAll(".nav-link");
 
@@ -55,6 +61,10 @@ document.getElementById("searchTripsBtn").onclick = async () => {
     const to = document.getElementById("toStation").value;
     const date = document.getElementById("tripDate").value;
 
+    if (from === to) {
+      throw new Error("Departure and destination must be different.");
+    }
+
     const res = await fetch(`${API_BASE}/trips/search?from=${from}&to=${to}&date=${date}`);
     const data = await res.json();
 
@@ -74,9 +84,17 @@ document.getElementById("searchTripsBtn").onclick = async () => {
     container.className = "trip-list";
     container.innerHTML = data.map(trip => `
       <div class="trip-card">
-        <div class="trip-route">${trip.from} → ${trip.to}</div>
-        <div class="trip-time">${trip.departureTime} → ${trip.arrivalTime}</div>
-        <div class="trip-price">${trip.price} €</div>
+        <div class="trip-card-left">
+          <div class="trip-route">🚆 ${trip.from} → ${trip.to}</div>
+          <div class="trip-time">${trip.departureTime} → ${trip.arrivalTime}</div>
+          <div class="trip-badges">
+            <span class="trip-badge">Direct trip</span>
+            <span class="trip-badge">Date: ${trip.departureTime.slice(0, 10)}</span>
+          </div>
+        </div>
+        <div class="trip-card-right">
+          <div class="trip-price">${trip.price} €</div>
+        </div>
       </div>
     `).join("");
 
@@ -111,18 +129,18 @@ const loadMyTickets = async () => {
       <div class="ticket-card">
         <div class="ticket-card-header">
           <div>
-            <div class="ticket-id">Ticket ${ticket.ticketId}</div>
-            <div class="muted">Status: ${ticket.status}</div>
+            <div class="ticket-id">🎫 Ticket ${ticket.ticketId}</div>
+            <div class="${getStatusBadgeClass(ticket.status)}">${ticket.status}</div>
           </div>
         </div>
         <div class="ticket-meta">
-          <div><strong>From:</strong> ${ticket.validFrom}</div>
-          <div><strong>Until:</strong> ${ticket.validUntil}</div>
-          <div><strong>Issued:</strong> ${ticket.issuedAt}</div>
+          <div><strong>Valid from:</strong> ${ticket.validFrom}</div>
+          <div><strong>Valid until:</strong> ${ticket.validUntil}</div>
+          <div><strong>Issued at:</strong> ${ticket.issuedAt}</div>
         </div>
         <div class="ticket-actions">
-          <button class="btn btn-secondary" onclick="downloadQr('${ticket.ticketId}')">QR</button>
-          <button class="btn btn-primary" onclick="downloadPdf('${ticket.ticketId}')">PDF</button>
+          <button class="btn btn-secondary" onclick="downloadQr('${ticket.ticketId}')">Download QR</button>
+          <button class="btn btn-primary" onclick="downloadPdf('${ticket.ticketId}')">Download PDF</button>
           <button class="btn btn-ghost" onclick="fillControlTicket('${ticket.ticketId}')">Use for control</button>
         </div>
       </div>
@@ -227,6 +245,12 @@ document.getElementById("validateTicketBtn").onclick = async () => {
 
     const card = document.getElementById("controlResultCard");
     card.classList.remove("hidden");
+
+    let cardClass = "result-card info-card";
+    if (data.result === "VALID") cardClass = "result-card success-card";
+    if (data.result === "EXPIRED" || data.result === "INVALID") cardClass = "result-card error-card";
+
+    card.className = cardClass;
     card.innerHTML = `<strong>Validation result:</strong> ${data.result}`;
 
     let type = "info";
