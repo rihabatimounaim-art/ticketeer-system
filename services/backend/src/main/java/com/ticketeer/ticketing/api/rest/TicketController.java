@@ -73,8 +73,16 @@ public class TicketController {
     }
 
     @GetMapping("/{ticketId}/qr")
-    public ResponseEntity<byte[]> downloadTicketQr(@PathVariable final String ticketId) {
-        final byte[] qrPng = generateTicketQrUseCase.execute(new TicketId(UUID.fromString(ticketId)));
+    public ResponseEntity<byte[]> downloadTicketQr(@PathVariable final String ticketId,
+                                                   @AuthenticationPrincipal final JwtAuthenticatedUser authenticatedUser) {
+        final UserId requesterId = new UserId(UUID.fromString(authenticatedUser.userId()));
+        final boolean isAdmin = "ADMIN".equalsIgnoreCase(authenticatedUser.role());
+
+        final byte[] qrPng = generateTicketQrUseCase.execute(
+                new TicketId(UUID.fromString(ticketId)),
+                requesterId,
+                isAdmin
+        );
 
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
