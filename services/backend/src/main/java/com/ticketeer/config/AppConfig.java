@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import com.ticketeer.ticketing.application.port.QrImageGenerator;
+import com.ticketeer.ticketing.application.usecase.GenerateTicketQrUseCase;
 
 @Configuration
 public class AppConfig {
@@ -88,5 +90,20 @@ public class AppConfig {
     @Bean
     public QrImageGenerator qrImageGenerator() {
         return new ZxingQrImageGenerator();
-}
+    }
+
+    @Bean
+    public GenerateTicketQrUseCase generateTicketQrUseCase(TicketRepository ticketRepository,
+                                                       SignatureService signatureService,
+                                                       QrCodeGenerator qrCodeGenerator,
+                                                       QrImageGenerator qrImageGenerator) {
+    return new GenerateTicketQrUseCase(
+            ticketRepository,
+            signatureService,
+            qrCodeGenerator,
+            qrImageGenerator
+    );
+    }
+
+    
 }
