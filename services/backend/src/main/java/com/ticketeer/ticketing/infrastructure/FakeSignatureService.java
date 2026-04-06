@@ -10,4 +10,9 @@ public class FakeSignatureService implements SignatureService {
     public String sign(final String payload) {
         return "SIGN-" + payload.hashCode();
     }
+
+    @Override
+    public boolean verify(final String payload, final String signature) {
+        return sign(payload).equals(signature);
+    }
 }
