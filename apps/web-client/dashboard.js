@@ -95,20 +95,23 @@ document.getElementById("searchTripsBtn").onclick = async () => {
 
     container.className = "trip-list";
     container.innerHTML = data.map(trip => `
-      <div class="trip-card">
-        <div class="trip-card-left">
-          <div class="trip-route">🚆 ${trip.from} → ${trip.to}</div>
-          <div class="trip-time">${trip.departureTime} → ${trip.arrivalTime}</div>
-          <div class="trip-badges">
-            <span class="trip-badge">Direct trip</span>
-            <span class="trip-badge">Date: ${trip.departureTime.slice(0, 10)}</span>
-          </div>
-        </div>
-        <div class="trip-card-right">
-          <div class="trip-price">${trip.price} €</div>
-        </div>
+  <div class="trip-card">
+    <div class="trip-card-left">
+      <div class="trip-route">🚆 ${trip.from} → ${trip.to}</div>
+      <div class="trip-time">${trip.departureTime} → ${trip.arrivalTime}</div>
+      <div class="trip-badges">
+        <span class="trip-badge">Direct trip</span>
+        <span class="trip-badge">Date: ${trip.departureTime.slice(0, 10)}</span>
       </div>
-    `).join("");
+    </div>
+    <div class="trip-card-right">
+      <div class="trip-price">${trip.price} €</div>
+      <button class="btn btn-primary" onclick='selectTripForBooking(${JSON.stringify(trip)})'>
+        Book this trip
+      </button>
+    </div>
+  </div>
+`).join("");
 
     setStatus("tripSearchStatus", `${data.length} trip(s) found.`, "success");
   } catch (error) {
@@ -273,6 +276,18 @@ document.getElementById("validateTicketBtn").onclick = async () => {
   } catch (error) {
     setStatus("controlStatus", error.message, "error");
   }
+  window.selectTripForBooking = (trip) => {
+  document.getElementById("validFrom").value = trip.departureTime;
+  document.getElementById("validUntil").value = trip.arrivalTime;
+
+  setStatus(
+    "ticketStatus",
+    `Trip selected: ${trip.from} → ${trip.to}. You can now create the ticket.`,
+    "info"
+  );
+
+  document.querySelector('[data-section="ticketsSection"]').click();
+};
 };
 
 loadMyTickets();
