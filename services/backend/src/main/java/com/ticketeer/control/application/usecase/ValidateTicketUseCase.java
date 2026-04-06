@@ -5,6 +5,7 @@ import com.ticketeer.control.domain.model.ValidationId;
 import com.ticketeer.control.domain.model.ValidationRecord;
 import com.ticketeer.control.domain.model.ValidationResult;
 import com.ticketeer.identity.domain.model.UserId;
+import com.ticketeer.shared.domain.exception.BusinessRuleViolationException;
 import com.ticketeer.shared.domain.time.DomainClock;
 import com.ticketeer.ticketing.application.port.TicketRepository;
 import com.ticketeer.ticketing.domain.model.Ticket;
@@ -35,23 +36,10 @@ public class ValidateTicketUseCase {
     public ValidationRecord execute(final TicketId ticketId, final UserId agentId) {
 
         final Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() -> new BusinessRuleViolationException("Ticket not found"));
 
         final Instant now = clock.now();
-
-        ValidationResult result;
-
-        if (!ticket.isValidAt(now)) {
-            result = ValidationResult.EXPIRED;
-        } else {
-            final List<ValidationRecord> previous = validationRepository.findByTicketId(ticketId);
-
-            if (!previous.isEmpty()) {
-                result = ValidationResult.ALREADY_CONTROLLED;
-            } else {
-                result = ValidationResult.VALID;
-            }
-        }
+        final ValidationResult result = determineValidationResult(ticket, ticketId, now);
 
         final ValidationRecord record = new ValidationRecord(
                 ValidationId.newId(),
@@ -62,5 +50,20 @@ public class ValidateTicketUseCase {
         );
 
         return validationRepository.save(record);
+    }
+
+    private ValidationResult determineValidationResult(final Ticket ticket,
+                                                       final TicketId ticketId,
+                                                       final Instant now) {
+        if (!ticket.isValidAt(now)) {
+            return ValidationResult.EXPIRED;
+        }
+
+        final List<ValidationRecord> previousValidations = validationRepository.findByTicketId(ticketId);
+        if (!previousValidations.isEmpty()) {
+            return ValidationResult.ALREADY_CONTROLLED;
+        }
+
+        return ValidationResult.VALID;
     }
 }
