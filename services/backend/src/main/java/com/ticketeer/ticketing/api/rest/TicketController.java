@@ -4,6 +4,7 @@ import com.ticketeer.identity.domain.model.UserId;
 import com.ticketeer.security.JwtAuthenticatedUser;
 import com.ticketeer.shared.domain.model.DateRange;
 import com.ticketeer.ticketing.application.command.IssueTicketCommand;
+import com.ticketeer.ticketing.application.usecase.GenerateTicketPdfUseCase;
 import com.ticketeer.ticketing.application.usecase.GenerateTicketQrUseCase;
 import com.ticketeer.ticketing.application.usecase.GetMyTicketsUseCase;
 import com.ticketeer.ticketing.application.usecase.IssueTicketUseCase;
@@ -27,13 +28,16 @@ public class TicketController {
     private final IssueTicketUseCase issueTicketUseCase;
     private final GetMyTicketsUseCase getMyTicketsUseCase;
     private final GenerateTicketQrUseCase generateTicketQrUseCase;
+    private final GenerateTicketPdfUseCase generateTicketPdfUseCase;
 
     public TicketController(final IssueTicketUseCase issueTicketUseCase,
                             final GetMyTicketsUseCase getMyTicketsUseCase,
-                            final GenerateTicketQrUseCase generateTicketQrUseCase) {
+                            final GenerateTicketQrUseCase generateTicketQrUseCase,
+                            final GenerateTicketPdfUseCase generateTicketPdfUseCase) {
         this.issueTicketUseCase = issueTicketUseCase;
         this.getMyTicketsUseCase = getMyTicketsUseCase;
         this.generateTicketQrUseCase = generateTicketQrUseCase;
+        this.generateTicketPdfUseCase = generateTicketPdfUseCase;
     }
 
     @PostMapping
@@ -95,5 +99,30 @@ public class TicketController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(qrPng);
+    }
+
+    @GetMapping("/{ticketId}/pdf")
+    public ResponseEntity<byte[]> downloadTicketPdf(@PathVariable final String ticketId,
+                                                    @AuthenticationPrincipal final JwtAuthenticatedUser authenticatedUser) {
+        final UserId requesterId = new UserId(UUID.fromString(authenticatedUser.userId()));
+        final boolean isAdmin = "ADMIN".equalsIgnoreCase(authenticatedUser.role());
+
+        final byte[] pdfBytes = generateTicketPdfUseCase.execute(
+                new TicketId(UUID.fromString(ticketId)),
+                requesterId,
+                isAdmin
+        );
+
+        final HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename("ticket-" + ticketId + ".pdf")
+                        .build()
+        );
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
     }
 }
