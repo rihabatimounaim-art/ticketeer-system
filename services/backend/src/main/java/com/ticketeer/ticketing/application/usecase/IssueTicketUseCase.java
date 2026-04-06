@@ -41,9 +41,24 @@ public class IssueTicketUseCase {
 
         ticket.activate();
 
-        final String qrPayload = qrCodeGenerator.generate(ticket);
-        signatureService.sign(qrPayload);
+        final String payload = buildPayload(ticket);
+        final String signature = signatureService.sign(payload);
+        final String qrContent = qrCodeGenerator.generate(payload, signature);
+
+        // qrContent is intentionally produced here to stabilize the signed QR contract.
+        // It is not yet persisted nor returned until the PDF/QR download feature is implemented.
+        if (qrContent == null || qrContent.isBlank()) {
+            throw new IllegalStateException("QR content generation failed");
+        }
 
         return ticketRepository.save(ticket);
+    }
+
+    private String buildPayload(final Ticket ticket) {
+        return "ticketId=" + ticket.getId()
+                + ";holderId=" + ticket.getHolderId()
+                + ";validFrom=" + ticket.getValidityWindow().getStart()
+                + ";validUntil=" + ticket.getValidityWindow().getEnd()
+                + ";issuedAt=" + ticket.getIssuedAt();
     }
 }
