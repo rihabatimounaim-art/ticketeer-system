@@ -1,5 +1,7 @@
 package com.ticketeer.config;
 
+import com.ticketeer.ticketing.application.port.QrImageGenerator;
+import com.ticketeer.ticketing.infrastructure.ZxingQrImageGenerator;
 import com.ticketeer.control.application.port.ValidationRepository;
 import com.ticketeer.control.application.usecase.ValidateTicketUseCase;
 import com.ticketeer.identity.application.port.PasswordVerifier;
@@ -82,4 +84,9 @@ public class AppConfig {
     public TokenGenerator tokenGenerator(JwtProperties jwtProperties) {
         return new JwtTokenGenerator(jwtProperties);
     }
+
+    @Bean
+    public QrImageGenerator qrImageGenerator() {
+        return new ZxingQrImageGenerator();
+}
 }
