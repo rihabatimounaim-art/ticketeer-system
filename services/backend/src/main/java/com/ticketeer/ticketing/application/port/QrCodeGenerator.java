@@ -1,11 +1,9 @@
 package com.ticketeer.ticketing.application.port;
 
-import com.ticketeer.ticketing.domain.model.Ticket;
-
 /**
- * Port responsible for generating QR codes from tickets.
+ * Port responsible for building QR content from a payload and its signature.
  */
 public interface QrCodeGenerator {
 
-    String generate(Ticket ticket);
+    String generate(String payload, String signature);
 }
