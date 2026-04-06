@@ -15,6 +15,7 @@ const claims = parseJwt(token);
 const userId = claims.sub;
 const role = claims.role;
 const email = claims.email;
+let selectedTrip = null;
 
 const authHeaders = () => ({
   "Content-Type": "application/json",
@@ -122,6 +123,8 @@ document.getElementById("searchTripsBtn").onclick = async () => {
 };
 
 window.selectTripForBooking = (trip) => {
+  selectedTrip = trip;
+
   document.getElementById("validFrom").value = trip.departureTime;
   document.getElementById("validUntil").value = trip.arrivalTime;
 
@@ -159,13 +162,14 @@ const loadMyTickets = async () => {
       <div class="ticket-card">
         <div class="ticket-card-header">
           <div>
-            <div class="ticket-id">🎫 Ticket ${ticket.ticketId}</div>
+            <div class="ticket-id">🎫 ${ticket.departureStationCode} → ${ticket.arrivalStationCode}</div>
             <div class="${getStatusBadgeClass(ticket.status)}">${ticket.status}</div>
           </div>
         </div>
         <div class="ticket-meta">
-          <div><strong>Valid from:</strong> ${ticket.validFrom}</div>
-          <div><strong>Valid until:</strong> ${ticket.validUntil}</div>
+          <div><strong>Departure:</strong> ${ticket.departureTime}</div>
+          <div><strong>Arrival:</strong> ${ticket.arrivalTime}</div>
+          <div><strong>Price:</strong> ${ticket.price} €</div>
           <div><strong>Issued at:</strong> ${ticket.issuedAt}</div>
         </div>
         <div class="ticket-actions">
@@ -191,13 +195,22 @@ document.getElementById("createTicketBtn").onclick = async () => {
     const validFrom = document.getElementById("validFrom").value.trim();
     const validUntil = document.getElementById("validUntil").value.trim();
 
+    if (!selectedTrip) {
+      throw new Error("Please select a trip before creating a ticket.");
+    }
+
     const res = await fetch(`${API_BASE}/tickets`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({
         holderId: userId,
         validFrom,
-        validUntil
+        validUntil,
+        departureStationCode: selectedTrip.from,
+        arrivalStationCode: selectedTrip.to,
+        departureTime: selectedTrip.departureTime,
+        arrivalTime: selectedTrip.arrivalTime,
+        price: selectedTrip.price
       })
     });
 
@@ -208,6 +221,7 @@ document.getElementById("createTicketBtn").onclick = async () => {
     }
 
     setStatus("ticketStatus", `Ticket created successfully (${data.status}).`, "success");
+    selectedTrip = null;
     await loadMyTickets();
   } catch (error) {
     setStatus("ticketStatus", error.message, "error");
