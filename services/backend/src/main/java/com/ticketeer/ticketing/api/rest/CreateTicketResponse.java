@@ -1,7 +1,13 @@
 package com.ticketeer.ticketing.api.rest;
 
-public record CreateTicketResponse(
-        String ticketId,
-        String status
+public record CreateTicketRequest(
+        String holderId,
+        String validFrom,
+        String validUntil,
+        String departureStationCode,
+        String arrivalStationCode,
+        String departureTime,
+        String arrivalTime,
+        double price
 ) {
 }
