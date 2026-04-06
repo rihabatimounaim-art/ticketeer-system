@@ -36,6 +36,11 @@ public class IssueTicketUseCase {
                 TicketId.newId(),
                 command.holderId(),
                 command.validityWindow(),
+                command.departureStationCode(),
+                command.arrivalStationCode(),
+                command.departureTime(),
+                command.arrivalTime(),
+                command.price(),
                 clock.now()
         );
 
@@ -45,8 +50,6 @@ public class IssueTicketUseCase {
         final String signature = signatureService.sign(payload);
         final String qrContent = qrCodeGenerator.generate(payload, signature);
 
-        // qrContent is intentionally produced here to stabilize the signed QR contract.
-        // It is not yet persisted nor returned until the PDF/QR download feature is implemented.
         if (qrContent == null || qrContent.isBlank()) {
             throw new IllegalStateException("QR content generation failed");
         }
@@ -57,6 +60,11 @@ public class IssueTicketUseCase {
     private String buildPayload(final Ticket ticket) {
         return "ticketId=" + ticket.getId()
                 + ";holderId=" + ticket.getHolderId()
+                + ";from=" + ticket.getDepartureStationCode()
+                + ";to=" + ticket.getArrivalStationCode()
+                + ";departureTime=" + ticket.getDepartureTime()
+                + ";arrivalTime=" + ticket.getArrivalTime()
+                + ";price=" + ticket.getPrice()
                 + ";validFrom=" + ticket.getValidityWindow().getStart()
                 + ";validUntil=" + ticket.getValidityWindow().getEnd()
                 + ";issuedAt=" + ticket.getIssuedAt();
