@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticketeer - Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="dashboard-body">
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div>
+        <div class="brand-badge">Ticketeer</div>
+        <p class="sidebar-subtitle">Rail ticketing dashboard</p>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-link active" data-section="searchSection">Search trips</button>
+        <button class="nav-link" data-section="ticketsSection">My tickets</button>
+        <button class="nav-link" data-section="controlSection">Control</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div id="userBadge" class="user-badge">Connected</div>
+        <button id="logoutBtn" class="btn btn-secondary btn-block">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="muted">Search trips, manage tickets, and validate them.</p>
+        </div>
+      </header>
+
+      <section id="searchSection" class="content-section active">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Search trips</h2>
+            <p class="muted">Select departure, destination and travel date.</p>
+          </div>
+
+          <div class="grid-form">
+            <div>
+              <label>From</label>
+              <select id="fromStation">
+                <option value="PARIS">Paris</option>
+                <option value="LYON">Lyon</option>
+                <option value="MARSEILLE">Marseille</option>
+                <option value="LILLE">Lille</option>
+                <option value="BORDEAUX">Bordeaux</option>
+                <option value="NANTES">Nantes</option>
+              </select>
+            </div>
+
+            <div>
+              <label>To</label>
+              <select id="toStation">
+                <option value="LYON">Lyon</option>
+                <option value="PARIS">Paris</option>
+                <option value="MARSEILLE">Marseille</option>
+                <option value="LILLE">Lille</option>
+                <option value="BORDEAUX">Bordeaux</option>
+                <option value="NANTES">Nantes</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Date</label>
+              <input id="tripDate" type="date" value="2026-04-06" />
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button id="searchTripsBtn" class="btn btn-primary">Search trips</button>
+          </div>
+
+          <div id="tripSearchStatus" class="status-line info"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Available trips</h2>
+          </div>
+          <div id="tripResults" class="trip-list empty-state">
+            No trip loaded yet.
+          </div>
+        </div>
+      </section>
+
+      <section id="ticketsSection" class="content-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Create ticket</h2>
+            <p class="muted">Issue a ticket for the connected user.</p>
+          </div>
+
+          <div class="grid-form">
+            <div>
+              <label>Valid from</label>
+              <input id="validFrom" type="text" value="2026-04-01T00:00:00Z" />
+            </div>
+            <div>
+              <label>Valid until</label>
+              <input id="validUntil" type="text" value="2026-04-10T23:59:59Z" />
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button id="createTicketBtn" class="btn btn-primary">Create ticket</button>
+            <button id="loadTicketsBtn" class="btn btn-secondary">Refresh my tickets</button>
+          </div>
+
+          <div id="ticketStatus" class="status-line info"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>My tickets</h2>
+          </div>
+          <div id="ticketsList" class="ticket-list empty-state">
+            No ticket loaded yet.
+          </div>
+        </div>
+      </section>
+
+      <section id="controlSection" class="content-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Ticket control</h2>
+            <p class="muted">Validate a ticket by its identifier.</p>
+          </div>
+
+          <label>Ticket ID</label>
+          <input id="controlTicketId" type="text" placeholder="Paste a ticket UUID" />
+
+          <div class="toolbar">
+            <button id="validateTicketBtn" class="btn btn-primary">Validate ticket</button>
+          </div>
+
+          <div id="controlStatus" class="status-line info"></div>
+          <div id="controlResultCard" class="result-card hidden"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
