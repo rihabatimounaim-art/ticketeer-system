@@ -40,20 +40,72 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        if (userRepository.findByEmail("admin@ticketeer.com").isEmpty()) {
-            final UserEntity admin = new UserEntity(
-                    UUID.fromString("11111111-1111-1111-1111-111111111111"),
-                    "Admin",
-                    "Ticketeer",
-                    "admin@ticketeer.com",
-                    passwordEncoder.encode("admin123"),
-                    "ADMIN",
-                    true
-            );
+    seedUser(
+            UUID.fromString("11111111-1111-1111-1111-111111111111"),
+            "Admin",
+            "Ticketeer",
+            "admin@ticketeer.com",
+            "admin123",
+            "ADMIN"
+    );
 
-            userRepository.save(admin);
-        }
+    seedUser(
+            UUID.fromString("22222222-2222-2222-2222-222222222222"),
+            "Rihab",
+            "User",
+            "rihab@ticketeer.com",
+            "user123",
+            "CUSTOMER"
+    );
+
+    seedUser(
+            UUID.fromString("33333333-3333-3333-3333-333333333333"),
+            "Sara",
+            "User",
+            "sara@ticketeer.com",
+            "user123",
+            "CUSTOMER"
+    );
+
+    seedUser(
+            UUID.fromString("44444444-4444-4444-4444-444444444444"),
+            "Youssef",
+            "User",
+            "youssef@ticketeer.com",
+            "user123",
+            "CUSTOMER"
+    );
+
+    seedUser(
+            UUID.fromString("55555555-5555-5555-5555-555555555555"),
+            "Nadia",
+            "Controller",
+            "controller@ticketeer.com",
+            "control123",
+            "AGENT"
+    );
+}
+
+private void seedUser(final UUID id,
+                      final String firstName,
+                      final String lastName,
+                      final String email,
+                      final String rawPassword,
+                      final String role) {
+    if (userRepository.findByEmail(email).isPresent()) {
+        return;
     }
+
+    userRepository.save(new UserEntity(
+            id,
+            firstName,
+            lastName,
+            email,
+            passwordEncoder.encode(rawPassword),
+            role,
+            true
+    ));
+}
 
     private void seedStations() {
         if (stationRepository.count() > 0) {
