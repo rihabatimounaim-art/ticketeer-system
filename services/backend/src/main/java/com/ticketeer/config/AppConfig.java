@@ -27,6 +27,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import com.ticketeer.network.application.SearchTripsUseCase;
+import com.ticketeer.network.infrastructure.SpringDataTripRepository;
 
 @Configuration
 public class AppConfig {
@@ -126,4 +128,8 @@ public class AppConfig {
                 pdfTicketGenerator
         );
     }
+    @Bean
+    public SearchTripsUseCase searchTripsUseCase(SpringDataTripRepository tripRepository) {
+        return new SearchTripsUseCase(tripRepository);
+}
 }
