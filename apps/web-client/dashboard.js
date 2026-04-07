@@ -214,10 +214,19 @@ document.getElementById("createTicketBtn").onclick = async () => {
       })
     });
 
-    const data = await res.json();
+    let data = null;
+    const text = await res.text();
+
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text };
+      }
+    }
 
     if (!res.ok) {
-      throw new Error(data.message || "Ticket creation failed");
+      throw new Error(data?.message || data?.raw || `Ticket creation failed (HTTP ${res.status})`);
     }
 
     setStatus("ticketStatus", `Ticket created successfully (${data.status}).`, "success");
@@ -226,7 +235,7 @@ document.getElementById("createTicketBtn").onclick = async () => {
   } catch (error) {
     setStatus("ticketStatus", error.message, "error");
   }
-};
+  };
 
 window.downloadQr = async (ticketId) => {
   const res = await fetch(`${API_BASE}/tickets/${ticketId}/qr`, {
