@@ -1,7 +1,7 @@
 package com.ticketeer.ticketing.api.rest;
 
 public record MyTicketResponse(
-        String ticketId,
+        String id,
         String holderId,
         String departureStationCode,
         String arrivalStationCode,

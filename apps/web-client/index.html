@@ -1,12 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=login.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ticketeer</title>
+  <title>Ticketeer — Connexion</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-  <p>Redirecting to <a href="login.html">login.html</a>...</p>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+        </svg>
+      </div>
+      <h1>Ticketeer</h1>
+      <p>Systeme de billetterie ferroviaire</p>
+    </div>
+
+    <div id="alert-area"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Adresse e-mail</label>
+        <input type="email" id="email" placeholder="mia@ticketeer.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" placeholder="Votre mot de passe" required />
+      </div>
+      <button type="submit" class="btn btn-primary" id="login-btn">Se connecter</button>
+    </form>
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--gray-200);font-size:.8125rem;color:var(--gray-600);">
+      <strong>Comptes demo :</strong><br/>
+      Client : mia@ticketeer.com / user123<br/>
+      Agent  : monir@ticketeer.com / control123<br/>
+      Admin  : ouail@ticketeer.com / admin123
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    if (Auth.isLoggedIn()) {
+      const u = Auth.getUser();
+      if (u) redirect(u.role);
+    }
+
+    function redirect(role) {
+      if (role === 'AGENT') location.href = 'agent.html';
+      else if (role === 'ADMIN') location.href = 'admin.html';
+      else location.href = 'customer.html';
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Connexion...';
+
+      try {
+        const { token } = await api.auth.login(
+          document.getElementById('email').value.trim(),
+          document.getElementById('password').value
+        );
+        const p = decodeJwtPayload(token);
+        Auth.setSession(token, { id: p.sub, email: p.email, role: p.role });
+        redirect(p.role);
+      } catch (err) {
+        showAlert('alert-area', 'error', err.message || 'Identifiants incorrects');
+        btn.disabled = false;
+        btn.textContent = 'Se connecter';
+      }
+    });
+  </script>
 </body>
 </html>

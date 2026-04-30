@@ -1,9 +1,9 @@
 package com.ticketeer.network.api;
 
 public record TripResponse(
-        String tripId,
-        String from,
-        String to,
+        String id,
+        String departureStationCode,
+        String arrivalStationCode,
         String departureTime,
         String arrivalTime,
         double price

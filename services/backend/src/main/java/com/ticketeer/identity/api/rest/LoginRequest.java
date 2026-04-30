@@ -1,10 +1,14 @@
 package com.ticketeer.identity.api.rest;
 
-/**
- * Transport request payload for login.
- */
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 public record LoginRequest(
+        @NotBlank(message = "Email is required")
+        @Email(message = "Email format is invalid")
         String email,
+
+        @NotBlank(message = "Password is required")
         String password
 ) {
 }

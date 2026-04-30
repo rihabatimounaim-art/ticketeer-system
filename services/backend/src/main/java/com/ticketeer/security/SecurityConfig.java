@@ -26,8 +26,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtParser jwtParser() {
-        return new JwtParser();
+    public JwtParser jwtParser(JwtProperties jwtProperties) {
+        return new JwtParser(jwtProperties);
     }
 
     @Bean
@@ -39,17 +39,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationFilter jwtFilter) throws Exception {
-
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/trips/**").permitAll()
+                        .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/tickets/**").hasAnyRole("CUSTOMER", "ADMIN")
                         .requestMatchers("/control/**").hasAnyRole("AGENT", "ADMIN")
                         .anyRequest().authenticated()
                 )
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -58,12 +60,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:8000",
-                "http://127.0.0.1:8000",
-                "http://localhost:5500",
-                "http://127.0.0.1:5500"
-        ));
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(false);

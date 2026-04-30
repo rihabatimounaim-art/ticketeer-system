@@ -10,7 +10,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,78 +41,31 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        seedUser(
-                UUID.fromString("11111111-1111-1111-1111-111111111111"),
-                "Mia",
-                "Bennani",
-                "mia@ticketeer.com",
-                "user123",
-                "CUSTOMER"
-        );
-
-        seedUser(
-                UUID.fromString("22222222-2222-2222-2222-222222222222"),
-                "Lola",
-                "Alaoui",
-                "lola@ticketeer.com",
-                "user123",
-                "CUSTOMER"
-        );
-
-        seedUser(
-                UUID.fromString("33333333-3333-3333-3333-333333333333"),
-                "Rihabe",
-                "Atimounaim",
-                "rihabe@ticketeer.com",
-                "user123",
-                "CUSTOMER"
-        );
-
-        seedUser(
-                UUID.fromString("44444444-4444-4444-4444-444444444444"),
-                "Monir",
-                "Controller",
-                "monir@ticketeer.com",
-                "control123",
-                "AGENT"
-        );
-
-        seedUser(
-                UUID.fromString("55555555-5555-5555-5555-555555555555"),
-                "Ouail",
-                "Admin",
-                "ouail@ticketeer.com",
-                "admin123",
-                "ADMIN"
-        );
+        seedUser(UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                "Mia", "Bennani", "mia@ticketeer.com", "user123", "CUSTOMER");
+        seedUser(UUID.fromString("22222222-2222-2222-2222-222222222222"),
+                "Lola", "Alaoui", "lola@ticketeer.com", "user123", "CUSTOMER");
+        seedUser(UUID.fromString("33333333-3333-3333-3333-333333333333"),
+                "Rihabe", "Atimounaim", "rihabe@ticketeer.com", "user123", "CUSTOMER");
+        seedUser(UUID.fromString("44444444-4444-4444-4444-444444444444"),
+                "Monir", "Controller", "monir@ticketeer.com", "control123", "AGENT");
+        seedUser(UUID.fromString("55555555-5555-5555-5555-555555555555"),
+                "Ouail", "Admin", "ouail@ticketeer.com", "admin123", "ADMIN");
     }
 
-    private void seedUser(final UUID id,
-                          final String firstName,
-                          final String lastName,
-                          final String email,
-                          final String rawPassword,
-                          final String role) {
+    private void seedUser(final UUID id, final String firstName, final String lastName,
+                          final String email, final String rawPassword, final String role) {
         if (userRepository.findByEmail(email).isPresent()) {
             return;
         }
-
-        userRepository.save(new UserEntity(
-                id,
-                firstName,
-                lastName,
-                email,
-                passwordEncoder.encode(rawPassword),
-                role,
-                true
-        ));
+        userRepository.save(new UserEntity(id, firstName, lastName, email,
+                passwordEncoder.encode(rawPassword), role, true));
     }
 
     private void seedStations() {
         if (stationRepository.count() > 0) {
             return;
         }
-
         stationRepository.saveAll(List.of(
                 new StationEntity("PARIS", "Paris"),
                 new StationEntity("LYON", "Lyon"),
@@ -127,46 +81,34 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
+        // Generate trips relative to today so dates are always in the future
+        final LocalDate d1 = LocalDate.now().plusDays(1);
+        final LocalDate d2 = LocalDate.now().plusDays(2);
+        final LocalDate d3 = LocalDate.now().plusDays(3);
+
         tripRepository.saveAll(List.of(
-                new TripEntity(UUID.randomUUID(), "PARIS", "LYON",
-                        Instant.parse("2026-04-06T08:00:00Z"),
-                        Instant.parse("2026-04-06T10:00:00Z"), 55.0),
-
-                new TripEntity(UUID.randomUUID(), "PARIS", "LYON",
-                        Instant.parse("2026-04-06T14:00:00Z"),
-                        Instant.parse("2026-04-06T16:00:00Z"), 60.0),
-
-                new TripEntity(UUID.randomUUID(), "LYON", "MARSEILLE",
-                        Instant.parse("2026-04-06T11:00:00Z"),
-                        Instant.parse("2026-04-06T13:00:00Z"), 40.0),
-
-                new TripEntity(UUID.randomUUID(), "PARIS", "LILLE",
-                        Instant.parse("2026-04-06T09:00:00Z"),
-                        Instant.parse("2026-04-06T10:15:00Z"), 35.0),
-
-                new TripEntity(UUID.randomUUID(), "PARIS", "BORDEAUX",
-                        Instant.parse("2026-04-06T07:30:00Z"),
-                        Instant.parse("2026-04-06T10:30:00Z"), 50.0),
-
-                new TripEntity(UUID.randomUUID(), "PARIS", "NANTES",
-                        Instant.parse("2026-04-06T12:00:00Z"),
-                        Instant.parse("2026-04-06T14:30:00Z"), 45.0),
-
-                new TripEntity(UUID.randomUUID(), "BORDEAUX", "NANTES",
-                        Instant.parse("2026-04-06T15:00:00Z"),
-                        Instant.parse("2026-04-06T17:00:00Z"), 30.0),
-
-                new TripEntity(UUID.randomUUID(), "LYON", "PARIS",
-                        Instant.parse("2026-04-07T08:00:00Z"),
-                        Instant.parse("2026-04-07T10:00:00Z"), 55.0),
-
-                new TripEntity(UUID.randomUUID(), "MARSEILLE", "LYON",
-                        Instant.parse("2026-04-07T09:00:00Z"),
-                        Instant.parse("2026-04-07T11:00:00Z"), 40.0),
-
-                new TripEntity(UUID.randomUUID(), "LILLE", "PARIS",
-                        Instant.parse("2026-04-07T18:00:00Z"),
-                        Instant.parse("2026-04-07T19:15:00Z"), 35.0)
+                trip("PARIS", "LYON", d1, 8, 0, d1, 10, 0, 55.0),
+                trip("PARIS", "LYON", d1, 14, 0, d1, 16, 0, 60.0),
+                trip("LYON", "MARSEILLE", d1, 11, 0, d1, 13, 0, 40.0),
+                trip("PARIS", "LILLE", d1, 9, 0, d1, 10, 15, 35.0),
+                trip("PARIS", "BORDEAUX", d1, 7, 30, d1, 10, 30, 50.0),
+                trip("PARIS", "NANTES", d1, 12, 0, d1, 14, 30, 45.0),
+                trip("BORDEAUX", "NANTES", d2, 15, 0, d2, 17, 0, 30.0),
+                trip("LYON", "PARIS", d2, 8, 0, d2, 10, 0, 55.0),
+                trip("MARSEILLE", "LYON", d2, 9, 0, d2, 11, 0, 40.0),
+                trip("LILLE", "PARIS", d3, 18, 0, d3, 19, 15, 35.0)
         ));
+    }
+
+    private TripEntity trip(String from, String to, LocalDate date,
+                            int depH, int depM, LocalDate arrDate, int arrH, int arrM,
+                            double price) {
+        return new TripEntity(
+                UUID.randomUUID(),
+                from, to,
+                date.atTime(depH, depM).toInstant(ZoneOffset.UTC),
+                arrDate.atTime(arrH, arrM).toInstant(ZoneOffset.UTC),
+                price
+        );
     }
 }

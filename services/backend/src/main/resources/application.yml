@@ -1,8 +1,30 @@
+spring:
+  profiles:
+    active: h2
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+
 security:
   jwt:
-    secret: "change-this-secret-key-for-dev-only"
+    secret: ${JWT_SECRET:change-this-secret-key-for-dev-only-32chars}
     expiration-seconds: 86400
 
 ticketing:
   qr:
-    secret: "change-this-ticket-qr-secret-for-dev"
+    secret: ${QR_SECRET:change-this-ticket-qr-secret-for-dev-32ch}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha

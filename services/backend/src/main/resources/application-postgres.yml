@@ -1,21 +1,9 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/ticketeer
-    username: postgres
-    password: postgres
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/ticketeerdb}
+    username: ${DATABASE_USER:ticketeer}
+    password: ${DATABASE_PASSWORD:ticketeer}
+    driver-class-name: org.postgresql.Driver
   jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-security:
-  jwt:
-    secret: "change-this-secret-key-for-dev-only"
-    expiration-seconds: 86400
-
-ticketing:
-  qr:
-    secret: "change-this-ticket-qr-secret-for-dev"
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false

@@ -10,6 +10,10 @@ import com.ticketeer.ticketing.application.usecase.GetMyTicketsUseCase;
 import com.ticketeer.ticketing.application.usecase.IssueTicketUseCase;
 import com.ticketeer.ticketing.domain.model.Ticket;
 import com.ticketeer.ticketing.domain.model.TicketId;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,6 +25,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Tickets", description = "Ticket purchase and retrieval")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/tickets")
 public class TicketController {
@@ -40,9 +46,9 @@ public class TicketController {
         this.generateTicketPdfUseCase = generateTicketPdfUseCase;
     }
 
+    @Operation(summary = "Purchase a ticket")
     @PostMapping
-    public CreateTicketResponse createTicket(@RequestBody final CreateTicketRequest request) {
-
+    public CreateTicketResponse createTicket(@Valid @RequestBody final CreateTicketRequest request) {
         final Ticket ticket = issueTicketUseCase.execute(
                 new IssueTicketCommand(
                         new UserId(UUID.fromString(request.holderId())),
@@ -57,17 +63,13 @@ public class TicketController {
                         request.price()
                 )
         );
-
-        return new CreateTicketResponse(
-                ticket.getId().toString(),
-                ticket.getStatus().name()
-        );
+        return new CreateTicketResponse(ticket.getId().toString(), ticket.getStatus().name());
     }
 
+    @Operation(summary = "List my tickets")
     @GetMapping("/me")
     public List<MyTicketResponse> getMyTickets(@AuthenticationPrincipal final JwtAuthenticatedUser authenticatedUser) {
         final UserId holderId = new UserId(UUID.fromString(authenticatedUser.userId()));
-
         return getMyTicketsUseCase.execute(holderId)
                 .stream()
                 .map(ticket -> new MyTicketResponse(
@@ -86,6 +88,7 @@ public class TicketController {
                 .toList();
     }
 
+    @Operation(summary = "Download QR code for a ticket")
     @GetMapping("/{ticketId}/qr")
     public ResponseEntity<byte[]> downloadTicketQr(@PathVariable final String ticketId,
                                                    @AuthenticationPrincipal final JwtAuthenticatedUser authenticatedUser) {
@@ -93,24 +96,17 @@ public class TicketController {
         final boolean isAdmin = "ADMIN".equalsIgnoreCase(authenticatedUser.role());
 
         final byte[] qrPng = generateTicketQrUseCase.execute(
-                new TicketId(UUID.fromString(ticketId)),
-                requesterId,
-                isAdmin
+                new TicketId(UUID.fromString(ticketId)), requesterId, isAdmin
         );
 
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentDisposition(
-                ContentDisposition.inline()
-                        .filename("ticket-" + ticketId + "-qr.png")
-                        .build()
-        );
+        headers.setContentDisposition(ContentDisposition.inline().filename("ticket-" + ticketId + "-qr.png").build());
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(qrPng);
+        return ResponseEntity.ok().headers(headers).body(qrPng);
     }
 
+    @Operation(summary = "Download PDF for a ticket")
     @GetMapping("/{ticketId}/pdf")
     public ResponseEntity<byte[]> downloadTicketPdf(@PathVariable final String ticketId,
                                                     @AuthenticationPrincipal final JwtAuthenticatedUser authenticatedUser) {
@@ -118,21 +114,13 @@ public class TicketController {
         final boolean isAdmin = "ADMIN".equalsIgnoreCase(authenticatedUser.role());
 
         final byte[] pdfBytes = generateTicketPdfUseCase.execute(
-                new TicketId(UUID.fromString(ticketId)),
-                requesterId,
-                isAdmin
+                new TicketId(UUID.fromString(ticketId)), requesterId, isAdmin
         );
 
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(
-                ContentDisposition.attachment()
-                        .filename("ticket-" + ticketId + ".pdf")
-                        .build()
-        );
+        headers.setContentDisposition(ContentDisposition.attachment().filename("ticket-" + ticketId + ".pdf").build());
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(pdfBytes);
+        return ResponseEntity.ok().headers(headers).body(pdfBytes);
     }
 }
