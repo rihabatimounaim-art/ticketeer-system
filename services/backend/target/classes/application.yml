@@ -1,8 +1,0 @@
-security:
-  jwt:
-    secret: "change-this-secret-key-for-dev-only"
-    expiration-seconds: 86400
-
-ticketing:
-  qr:
-    secret: "change-this-ticket-qr-secret-for-dev"
