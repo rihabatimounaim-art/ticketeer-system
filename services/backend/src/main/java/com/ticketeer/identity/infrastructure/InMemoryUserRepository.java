@@ -30,4 +30,11 @@ public class InMemoryUserRepository implements UserRepository {
     public Optional<User> findByEmail(final String email) {
         return Optional.ofNullable(users.get(email));
     }
+
+    @Override
+    public Optional<User> findById(final UserId id) {
+        return users.values().stream()
+                .filter(u -> u.getId().equals(id))
+                .findFirst();
+    }
 }
