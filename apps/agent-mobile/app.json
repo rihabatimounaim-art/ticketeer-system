@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Ticketeer Agent",
+    "slug": "ticketeer-agent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ticketeer.agent"
+    },
+    "android": {
+      "package": "com.ticketeer.agent",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f1117"
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Autoriser Ticketeer Agent à accéder à votre caméra pour scanner les billets."
+        }
+      ]
+    ]
+  }
+}
