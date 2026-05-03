@@ -103,11 +103,13 @@ public class AppConfig {
 
     @Bean
     public GenerateTicketQrUseCase generateTicketQrUseCase(TicketRepository ticketRepository,
+                                                           UserRepository userRepository,
                                                            SignatureService signatureService,
                                                            QrCodeGenerator qrCodeGenerator,
                                                            QrImageGenerator qrImageGenerator) {
         return new GenerateTicketQrUseCase(
                 ticketRepository,
+                userRepository,
                 signatureService,
                 qrCodeGenerator,
                 qrImageGenerator
@@ -116,12 +118,14 @@ public class AppConfig {
 
     @Bean
     public GenerateTicketPdfUseCase generateTicketPdfUseCase(TicketRepository ticketRepository,
+                                                             UserRepository userRepository,
                                                              SignatureService signatureService,
                                                              QrCodeGenerator qrCodeGenerator,
                                                              QrImageGenerator qrImageGenerator,
                                                              PdfTicketGenerator pdfTicketGenerator) {
         return new GenerateTicketPdfUseCase(
                 ticketRepository,
+                userRepository,
                 signatureService,
                 qrCodeGenerator,
                 qrImageGenerator,

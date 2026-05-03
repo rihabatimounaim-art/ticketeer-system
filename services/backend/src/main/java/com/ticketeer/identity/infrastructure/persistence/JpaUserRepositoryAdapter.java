@@ -25,6 +25,12 @@ public class JpaUserRepositoryAdapter implements UserRepository {
                 .map(this::toDomain);
     }
 
+    @Override
+    public Optional<User> findById(final UserId id) {
+        return springDataUserRepository.findById(id.getValue())
+                .map(this::toDomain);
+    }
+
     private User toDomain(final UserEntity entity) {
         return new User(
                 new UserId(entity.getId()),

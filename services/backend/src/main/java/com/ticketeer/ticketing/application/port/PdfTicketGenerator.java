@@ -4,5 +4,5 @@ import com.ticketeer.ticketing.domain.model.Ticket;
 
 public interface PdfTicketGenerator {
 
-    byte[] generate(Ticket ticket, byte[] qrPng);
+    byte[] generate(Ticket ticket, byte[] qrPng, String holderName);
 }
