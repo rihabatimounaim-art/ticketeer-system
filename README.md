@@ -431,29 +431,29 @@ mvn test
 
 ## Roadmap
 
-### Réalisé ✅
+### Court terme — Soutenance ✅
 
-- [x] Backend REST complet (Clean Architecture + DDD)
+- [x] Backend REST complet avec Clean Architecture + DDD
 - [x] Authentification JWT + Spring Security (3 rôles)
 - [x] 10 villes, 20 trajets seedés dynamiquement
 - [x] Génération QR code signé (HMAC) et PDF (nom passager, trajet, prix)
 - [x] Validation de billets par agent
-- [x] Client web (client, agent, admin)
-- [x] **App mobile agent** (React Native + Expo, iOS & Android)
+- [x] Client web 4 rôles (client, agent, admin, login)
+- [x] **App mobile agent** (React Native + Expo, iOS & Android — scan QR natif)
 - [x] Docker Compose (dev + prod)
 - [x] Migrations Flyway
 - [x] Documentation Swagger UI
 - [x] Tests unitaires (17 tests)
 
-### À faire
+### Moyen terme — Mise en production
 
 - [ ] Refresh tokens JWT
 - [ ] Interface CRUD admin (gestion gares / trajets)
 - [ ] Paiement en ligne (Stripe)
-- [ ] Mode hors-ligne app mobile agent
 - [ ] Envoi de billet par email (SMTP)
+- [ ] Monitoring (Actuator + Prometheus + Grafana)
 - [ ] CI/CD pipeline (GitHub Actions)
-- [ ] HTTPS / reverse proxy
+- [ ] HTTPS / reverse proxy (Nginx / Caddy)
 
 ---
 
