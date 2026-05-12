@@ -258,7 +258,7 @@ docker compose down -v
 | Page | URL | Rôle | Fonctionnalités |
 |------|-----|------|-----------------|
 | `index.html` | `/index.html` | Public | Connexion, redirection par rôle |
-| `customer.html` | `/customer.html` | CUSTOMER, ADMIN | Recherche trajet, achat billet, liste billets, QR/PDF |
+| `customer.html` | `/customer.html` | CUSTOMER, ADMIN | Recherche trajet, achat billet, liste billets, historique, QR/PDF |
 | `admin.html` | `/admin.html` | ADMIN | Recherche trajets, gestion |
 | `dashboard.html` | `/dashboard.html` | ADMIN | Vue tableau des trajets |
 
@@ -323,8 +323,9 @@ POST /auth/login
 
 | Méthode | Endpoint | Accès | Description |
 |---------|----------|-------|-------------|
-| `POST` | `/tickets` | CUSTOMER, ADMIN | Acheter un billet |
-| `GET` | `/tickets/me` | CUSTOMER, ADMIN | Mes billets |
+| `POST` | `/tickets` | CUSTOMER, ADMIN | Acheter un billet (réduction appliquée côté serveur) |
+| `GET` | `/tickets/me` | CUSTOMER, ADMIN | Mes billets actifs |
+| `GET` | `/tickets/me/history` | CUSTOMER, ADMIN | Historique des voyages passés |
 | `GET` | `/tickets/{id}/qr` | CUSTOMER, ADMIN | QR code (PNG) |
 | `GET` | `/tickets/{id}/pdf` | CUSTOMER, ADMIN | Billet PDF |
 
@@ -374,7 +375,8 @@ validation_records  → id, ticket_id, agent_id, validated_at, result
 ### Données seedées
 
 - **10 gares** : Paris, Lyon, Marseille, Lille, Bordeaux, Nantes, Toulouse, Strasbourg, Nice, Rennes
-- **20 trajets** répartis sur J+1, J+2, J+3 (toujours dans le futur)
+- **26 trajets** : J+1/J+2/J+3 (plein tarif) + prochain samedi (−10% weekend) + samedi dans 3 semaines (−25% weekend + anticipée)
+- **5 billets passés** seedés pour la démo de l'historique (Mia, Lola, Rihabe)
 
 ### Profils Spring
 
@@ -435,10 +437,12 @@ mvn test
 
 - [x] Backend REST complet avec Clean Architecture + DDD
 - [x] Authentification JWT + Spring Security (3 rôles)
-- [x] 10 villes, 20 trajets seedés dynamiquement
+- [x] 10 villes, 26 trajets seedés dynamiquement
 - [x] Génération QR code signé (HMAC) et PDF (nom passager, trajet, prix)
 - [x] Validation de billets par agent
-- [x] Client web 4 rôles (client, agent, admin, login)
+- [x] **Politique de réductions** (saison basse −20%, weekend −10%, anticipée −15%, plafond 30%)
+- [x] **Historique des voyages** (`GET /tickets/me/history`)
+- [x] Client web : recherche, achat, billets, historique, QR/PDF
 - [x] **App mobile agent** (React Native + Expo, iOS & Android — scan QR natif)
 - [x] Docker Compose (dev + prod)
 - [x] Migrations Flyway
@@ -461,12 +465,13 @@ mvn test
 
 1. Ouvrir `http://localhost:8001/customer.html`
 2. Se connecter avec `mia@ticketeer.com` / `user123`
-3. Rechercher **Paris → Lyon** pour demain
+3. Rechercher **Paris → Lyon** pour **le prochain samedi** → voir la réduction weekend **−10%**
 4. Acheter un billet → télécharger le **QR code** ou le **PDF**
-5. Sur iPhone/Android → ouvrir **Ticketeer Agent**
-6. Se connecter avec `monir@ticketeer.com` / `control123`
-7. Scanner le QR code → ✅ **BILLET VALIDE**
-8. Rescanner le même QR → 🚫 **DÉJÀ CONTRÔLÉ**
+5. Cliquer **Historique** dans la sidebar → voir les voyages passés
+6. Sur iPhone/Android → ouvrir **Ticketeer Agent**
+7. Se connecter avec `monir@ticketeer.com` / `control123`
+8. Scanner le QR code → ✅ **BILLET VALIDE**
+9. Rescanner le même QR → 🚫 **DÉJÀ CONTRÔLÉ**
 
 ---
 
