@@ -1,6 +1,11 @@
 package com.ticketeer.control.api.rest;
 
+import java.util.UUID;
+
 public record ValidateTicketResponse(
-        String result
+        UUID ticketId,
+        String result,
+        String reason,
+        String message
 ) {
 }

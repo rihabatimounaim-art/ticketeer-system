@@ -5,7 +5,9 @@ package com.ticketeer.control.domain.model;
  */
 public enum ValidationResult {
     VALID,
-    INVALID,
+    ALREADY_CONTROLLED,
     EXPIRED,
-    ALREADY_CONTROLLED
+    NOT_FOUND,
+    WRONG_ROUTE,
+    TOO_EARLY
 }

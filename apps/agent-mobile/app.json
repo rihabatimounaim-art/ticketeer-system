@@ -21,7 +21,8 @@
         {
           "cameraPermission": "Autoriser Ticketeer Agent à accéder à votre caméra pour scanner les billets."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

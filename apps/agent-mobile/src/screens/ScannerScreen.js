@@ -14,11 +14,13 @@ import { validateTicket } from '../api';
 
 /**
  * Parse le contenu d'un QR Ticketeer.
- * Format : "ticketId=UUID;holderName=Nom;validFrom=...;validUntil=...;issuedAt=...|sig=SIG"
+ * Format possible :
+ * "ticketId=UUID;holderName=Nom;validFrom=...;validUntil=...;issuedAt=...|sig=SIG"
  */
 function parseQrContent(raw) {
   const payload = raw.split('|')[0]; // retirer la signature
   const parts = {};
+
   payload.split(';').forEach((segment) => {
     const idx = segment.indexOf('=');
     if (idx !== -1) {
@@ -27,10 +29,31 @@ function parseQrContent(raw) {
       parts[key] = value;
     }
   });
+
   return parts;
 }
 
-export default function ScannerScreen({ navigation }) {
+/**
+ * Extrait l'identifiant du billet.
+ * Compatible avec :
+ * - QR complet : ticketId=UUID;holderName=...
+ * - QR simple : UUID
+ */
+function extractTicketId(raw) {
+  if (!raw) return null;
+
+  const parsed = parseQrContent(raw);
+
+  if (parsed.ticketId) {
+    return parsed.ticketId;
+  }
+
+  return raw.trim();
+}
+
+export default function ScannerScreen({ route, navigation }) {
+  const controlContext = route.params?.controlContext;
+
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
   const [validating, setValidating] = useState(false);
@@ -50,14 +73,28 @@ export default function ScannerScreen({ navigation }) {
     navigation.replace('Login');
   };
 
+  const handleChangeTrip = () => {
+    navigation.replace('SelectTrip');
+  };
+
   const handleBarCodeScanned = async ({ data }) => {
     if (!scanning || validating || lastScan.current === data) return;
+
+    if (!controlContext) {
+      Alert.alert(
+        'Trajet manquant',
+        'Veuillez sélectionner le trajet contrôlé avant de scanner un billet.',
+        [{ text: 'Choisir un trajet', onPress: () => navigation.replace('SelectTrip') }]
+      );
+      return;
+    }
+
     lastScan.current = data;
     setScanning(false);
     setValidating(true);
 
     const parsed = parseQrContent(data);
-    const { ticketId } = parsed;
+    const ticketId = extractTicketId(data);
 
     if (!ticketId) {
       setValidating(false);
@@ -71,19 +108,56 @@ export default function ScannerScreen({ navigation }) {
 
     try {
       const token = await AsyncStorage.getItem('token');
-      const result = await validateTicket(ticketId, token);
-      navigation.navigate('Result', { result, parsed });
+
+      if (!token) {
+        await AsyncStorage.removeItem('token');
+        navigation.replace('Login');
+        return;
+      }
+
+      const validation = await validateTicket(ticketId, token, controlContext);
+
+      navigation.navigate('Result', {
+        validation,
+        parsed,
+        controlContext,
+      });
     } catch (e) {
       if (e.message === 'SESSION_EXPIRED') {
         await AsyncStorage.removeItem('token');
         navigation.replace('Login');
         return;
       }
-      navigation.navigate('Result', { result: 'ERROR', parsed, error: e.message });
+
+      navigation.navigate('Result', {
+        validation: {
+          result: 'INVALID',
+          reason: 'ERROR',
+          message: e.message,
+        },
+        parsed,
+        controlContext,
+      });
     } finally {
       setValidating(false);
     }
   };
+
+  // Si aucun trajet n'a été sélectionné
+  if (!controlContext) {
+    return (
+      <View style={styles.permContainer}>
+        <Text style={styles.permIcon}>🚆</Text>
+        <Text style={styles.permTitle}>Trajet non sélectionné</Text>
+        <Text style={styles.permText}>
+          Avant de scanner un billet, l’agent doit choisir le trajet actuellement contrôlé.
+        </Text>
+        <TouchableOpacity style={styles.permButton} onPress={handleChangeTrip}>
+          <Text style={styles.permButtonText}>Choisir un trajet</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Caméra non encore chargée
   if (!permission) {
@@ -118,13 +192,23 @@ export default function ScannerScreen({ navigation }) {
 
       {/* Barre du haut */}
       <View style={styles.topBar}>
-        <View>
+        <View style={styles.topLeftBlock}>
           <Text style={styles.appName}>🎫 Ticketeer Agent</Text>
           <Text style={styles.appSub}>Scanner de billets</Text>
+          <Text style={styles.tripText}>
+            Trajet : {controlContext.departureStationCode} → {controlContext.arrivalStationCode}
+          </Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Déconnexion</Text>
-        </TouchableOpacity>
+
+        <View style={styles.topActions}>
+          <TouchableOpacity style={styles.changeTripBtn} onPress={handleChangeTrip}>
+            <Text style={styles.changeTripText}>Trajet</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Déconnexion</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Zone de scan centrale */}
@@ -156,6 +240,9 @@ export default function ScannerScreen({ navigation }) {
       {/* Bas de l'écran */}
       <View style={styles.bottomBar}>
         <Text style={styles.bottomText}>
+          Contrôle sur le trajet {controlContext.departureStationCode} → {controlContext.arrivalStationCode}
+        </Text>
+        <Text style={styles.bottomSubText}>
           Seuls les billets Ticketeer sont acceptés
         </Text>
       </View>
@@ -212,14 +299,41 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingTop: 56,
-    paddingBottom: 20,
-    paddingHorizontal: 24,
+    paddingBottom: 18,
+    paddingHorizontal: 20,
     backgroundColor: 'rgba(0,0,0,0.65)',
+  },
+  topLeftBlock: {
+    flex: 1,
+    paddingRight: 12,
   },
   appName: { color: '#fff', fontSize: 18, fontWeight: '700' },
   appSub: { color: '#9ca3af', fontSize: 12, marginTop: 2 },
+  tripText: {
+    color: '#c7d2fe',
+    fontSize: 12,
+    marginTop: 6,
+    fontWeight: '600',
+  },
+  topActions: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  changeTripBtn: {
+    borderWidth: 1,
+    borderColor: '#4f46e5',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(79, 70, 229, 0.15)',
+  },
+  changeTripText: {
+    color: '#c7d2fe',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   logoutBtn: {
     borderWidth: 1,
     borderColor: '#ef4444',
@@ -234,7 +348,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 120,
+    marginTop: 140,
   },
   scanBox: {
     width: BOX_SIZE,
@@ -250,23 +364,31 @@ const styles = StyleSheet.create({
     borderColor: '#4f46e5',
   },
   topLeft: {
-    top: 0, left: 0,
-    borderTopWidth: BORDER_W, borderLeftWidth: BORDER_W,
+    top: 0,
+    left: 0,
+    borderTopWidth: BORDER_W,
+    borderLeftWidth: BORDER_W,
     borderTopLeftRadius: 6,
   },
   topRight: {
-    top: 0, right: 0,
-    borderTopWidth: BORDER_W, borderRightWidth: BORDER_W,
+    top: 0,
+    right: 0,
+    borderTopWidth: BORDER_W,
+    borderRightWidth: BORDER_W,
     borderTopRightRadius: 6,
   },
   bottomLeft: {
-    bottom: 0, left: 0,
-    borderBottomWidth: BORDER_W, borderLeftWidth: BORDER_W,
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: BORDER_W,
+    borderLeftWidth: BORDER_W,
     borderBottomLeftRadius: 6,
   },
   bottomRight: {
-    bottom: 0, right: 0,
-    borderBottomWidth: BORDER_W, borderRightWidth: BORDER_W,
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: BORDER_W,
+    borderRightWidth: BORDER_W,
     borderBottomRightRadius: 6,
   },
   validatingOverlay: {
@@ -292,12 +414,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingBottom: 40,
-    paddingTop: 20,
+    paddingBottom: 38,
+    paddingTop: 18,
     backgroundColor: 'rgba(0,0,0,0.65)',
     alignItems: 'center',
   },
   bottomText: {
+    color: '#c7d2fe',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  bottomSubText: {
     color: '#6b7280',
     fontSize: 13,
   },

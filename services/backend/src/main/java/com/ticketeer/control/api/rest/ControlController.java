@@ -26,14 +26,39 @@ public class ControlController {
         this.validateTicketUseCase = validateTicketUseCase;
     }
 
-    @Operation(summary = "Validate a ticket", description = "Returns VALID, EXPIRED, or ALREADY_CONTROLLED")
+    @Operation(
+            summary = "Validate a ticket",
+            description = "Returns VALID, EXPIRED, ALREADY_CONTROLLED, WRONG_ROUTE, TOO_EARLY, or NOT_FOUND"
+    )
     @PostMapping("/validate")
-    public ValidateTicketResponse validate(@Valid @RequestBody final ValidateTicketRequest request,
-                                           @AuthenticationPrincipal final JwtAuthenticatedUser authenticatedUser) {
+    public ValidateTicketResponse validate(
+            @Valid @RequestBody final ValidateTicketRequest request,
+            @AuthenticationPrincipal final JwtAuthenticatedUser authenticatedUser
+    ) {
         final ValidationRecord record = validateTicketUseCase.execute(
-                new TicketId(UUID.fromString(request.ticketId())),
-                new UserId(UUID.fromString(authenticatedUser.userId()))
+                new TicketId(request.ticketId()),
+                new UserId(UUID.fromString(authenticatedUser.userId())),
+                request.departureStationCode(),
+                request.arrivalStationCode()    
         );
-        return new ValidateTicketResponse(record.getResult().name());
+
+        return new ValidateTicketResponse(
+                request.ticketId(),
+                record.getResult().name(),
+                record.getResult().name(),
+                buildMessage(record.getResult().name())
+        );
+    }
+
+    private String buildMessage(String result) {
+        return switch (result) {
+            case "VALID" -> "Billet valide.";
+            case "ALREADY_CONTROLLED" -> "Billet valide, mais déjà contrôlé.";
+            case "EXPIRED" -> "Billet non valide : période de validité dépassée.";
+            case "TOO_EARLY" -> "Billet non valide : contrôle effectué trop tôt.";
+            case "WRONG_ROUTE" -> "Billet non valide : ce billet ne correspond pas au trajet contrôlé.";
+            case "NOT_FOUND" -> "Billet non valide : billet inexistant.";
+            default -> "Billet non valide.";
+        };
     }
 }

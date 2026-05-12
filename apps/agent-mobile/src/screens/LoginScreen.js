@@ -20,10 +20,8 @@ export default function LoginScreen({ navigation }) {
 
   // Si un token existe déjà, aller directement au scanner
   useEffect(() => {
-    AsyncStorage.getItem('token').then((token) => {
-      if (token) navigation.replace('Scanner');
-    });
-  }, []);
+  AsyncStorage.removeItem('token');
+}, []);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -34,7 +32,7 @@ export default function LoginScreen({ navigation }) {
     try {
       const token = await login(email.trim(), password);
       await AsyncStorage.setItem('token', token);
-      navigation.replace('Scanner');
+      navigation.replace('SelectTrip');
     } catch (e) {
       Alert.alert('Connexion échouée', e.message);
     } finally {
