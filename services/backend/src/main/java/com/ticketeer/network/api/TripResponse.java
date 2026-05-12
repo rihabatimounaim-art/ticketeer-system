@@ -6,6 +6,9 @@ public record TripResponse(
         String arrivalStationCode,
         String departureTime,
         String arrivalTime,
-        double price
+        double price,
+        double discountedPrice,
+        int discountPercent,
+        String discountLabel
 ) {
 }

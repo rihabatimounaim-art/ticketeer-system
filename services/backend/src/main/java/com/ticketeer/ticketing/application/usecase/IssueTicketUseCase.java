@@ -7,9 +7,13 @@ import com.ticketeer.ticketing.application.port.SignatureService;
 import com.ticketeer.ticketing.application.port.TicketRepository;
 import com.ticketeer.ticketing.domain.model.Ticket;
 import com.ticketeer.ticketing.domain.model.TicketId;
+import com.ticketeer.ticketing.domain.service.DiscountResult;
+import com.ticketeer.ticketing.domain.service.SeasonDiscountPolicy;
+
+import java.time.Instant;
 
 /**
- * Use case responsible for issuing a ticket.
+ * Use case responsible for issuing a ticket with discount applied.
  */
 public class IssueTicketUseCase {
 
@@ -17,20 +21,31 @@ public class IssueTicketUseCase {
     private final QrCodeGenerator qrCodeGenerator;
     private final SignatureService signatureService;
     private final DomainClock clock;
+    private final SeasonDiscountPolicy discountPolicy;
 
     public IssueTicketUseCase(
             final TicketRepository ticketRepository,
             final QrCodeGenerator qrCodeGenerator,
             final SignatureService signatureService,
-            final DomainClock clock
+            final DomainClock clock,
+            final SeasonDiscountPolicy discountPolicy
     ) {
         this.ticketRepository = ticketRepository;
         this.qrCodeGenerator = qrCodeGenerator;
         this.signatureService = signatureService;
         this.clock = clock;
+        this.discountPolicy = discountPolicy;
     }
 
-    public Ticket execute(final IssueTicketCommand command) {
+    public IssueTicketResult execute(final IssueTicketCommand command) {
+        final Instant now = clock.now();
+
+        // Apply season / weekend / advance discount
+        final DiscountResult discount = discountPolicy.apply(
+                command.price(),
+                command.departureTime(),
+                now
+        );
 
         final Ticket ticket = new Ticket(
                 TicketId.newId(),
@@ -40,8 +55,8 @@ public class IssueTicketUseCase {
                 command.arrivalStationCode(),
                 command.departureTime(),
                 command.arrivalTime(),
-                command.price(),
-                clock.now()
+                discount.finalPrice(),
+                now
         );
 
         ticket.activate();
@@ -54,7 +69,8 @@ public class IssueTicketUseCase {
             throw new IllegalStateException("QR content generation failed");
         }
 
-        return ticketRepository.save(ticket);
+        final Ticket saved = ticketRepository.save(ticket);
+        return new IssueTicketResult(saved, discount);
     }
 
     private String buildPayload(final Ticket ticket) {
