@@ -46,6 +46,10 @@ public class OpenPdfTicketGenerator implements PdfTicketGenerator {
             qrImage.scaleToFit(220, 220);
             document.add(qrImage);
 
+            document.add(new Paragraph(
+                    "Validité du billet : le billet est valable pour le contrôle à partir de 30 minutes avant l’heure de départ du trajet et jusqu’à 30 minutes après l’heure d’arrivée."
+            ));
+
             document.close();
             return outputStream.toByteArray();
         } catch (Exception e) {

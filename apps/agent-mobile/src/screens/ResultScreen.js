@@ -91,6 +91,16 @@ function formatInstant(iso) {
   }
 }
 
+function getTicketValidFrom(controlContext) {
+  if (!controlContext?.departureTime) return null;
+  return new Date(new Date(controlContext.departureTime).getTime() - 30 * 60 * 1000);
+}
+
+function getTicketValidUntil(controlContext) {
+  if (!controlContext?.arrivalTime) return null;
+  return new Date(new Date(controlContext.arrivalTime).getTime() + 30 * 60 * 1000);
+}
+
 function InfoRow({ label, value }) {
   return (
     <View style={styles.row}>
@@ -132,6 +142,8 @@ export default function ResultScreen({ route, navigation }) {
 
   const ticketId = validation?.ticketId || parsed.ticketId;
   const shortId = getShortId(ticketId);
+  const validFromControl = getTicketValidFrom(controlContext);
+  const validUntilControl = getTicketValidUntil(controlContext);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: cfg.bgColor }]}>
@@ -156,14 +168,31 @@ export default function ResultScreen({ route, navigation }) {
             Résultat du contrôle
           </Text>
 
-          <InfoRow label="Résultat" value={result} />
           <InfoRow label="Motif" value={reason} />
 
           {controlContext && (
-            <InfoRow
-              label="Trajet contrôlé"
-              value={`${controlContext.departureStationCode} → ${controlContext.arrivalStationCode}`}
-            />
+            <>
+              <InfoRow
+                label="Trajet contrôlé"
+                value={`${controlContext.departureStationCode} → ${controlContext.arrivalStationCode}`}
+              />
+
+              {controlContext.departureTime && (
+                <InfoRow
+                  label="Départ"
+                  value={formatInstant(controlContext.departureTime)}
+                />
+              )}
+
+              {controlContext.arrivalTime && (
+                <InfoRow
+                  label="Arrivée"
+                  value={formatInstant(controlContext.arrivalTime)}
+                />
+              )}
+
+              
+            </>
           )}
         </View>
 
@@ -183,11 +212,11 @@ export default function ResultScreen({ route, navigation }) {
             )}
 
             {parsed.validFrom && (
-              <InfoRow label="Valide du" value={formatInstant(parsed.validFrom)} />
+              <InfoRow label="Valide du" value={formatInstant(validFromControl)} />
             )}
 
             {parsed.validUntil && (
-              <InfoRow label="Valide jusqu’au" value={formatInstant(parsed.validUntil)} />
+              <InfoRow label="Valide jusqu’au" value={formatInstant(validUntilControl)} />
             )}
 
             {parsed.issuedAt && (

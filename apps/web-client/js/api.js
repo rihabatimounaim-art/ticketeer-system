@@ -63,6 +63,11 @@ const api = {
       http('GET', `/trips/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${date}`),
   },
 
+  adminTrips: {
+    update: (id, body) =>
+      http('PUT', `/admin/trips/${id}`, body),
+  },
+
   tickets: {
     create: (body)        => http('POST', '/tickets', body),
     myTickets: ()         => http('GET', '/tickets/me'),
@@ -104,9 +109,28 @@ function statusBadge(status) {
   const map = {
     VALID: 'badge-success',
     CREATED: 'badge-primary',
+    ACTIVE: 'badge-success',
+    PAID: 'badge-success',
+
     EXPIRED: 'badge-danger',
+    TOO_EARLY: 'badge-warning',
+    ALREADY_CONTROLLED: 'badge-warning',
+    CONTROLLED: 'badge-warning',
   };
-  return `<span class="badge ${map[status] || 'badge-gray'}">${status}</span>`;
+
+  const labels = {
+    VALID: 'VALID',
+    CREATED: 'CRÉÉ',
+    ACTIVE: 'VALID',
+    PAID: 'VALID',
+
+    EXPIRED: 'EXPIRÉ',
+    TOO_EARLY: 'PAS ENCORE VALIDE',
+    ALREADY_CONTROLLED: 'DÉJÀ CONTRÔLÉ',
+    CONTROLLED: 'DÉJÀ CONTRÔLÉ',
+  };
+
+  return `<span class="badge ${map[status] || 'badge-gray'}">${labels[status] || status}</span>`;
 }
 
 function showAlert(container, type, message) {

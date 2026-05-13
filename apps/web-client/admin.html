@@ -199,6 +199,68 @@
           <button class="btn btn-primary" onclick="searchTrips()">Rechercher</button>
         </div>
         <div id="trips-grid" class="trips-grid"></div>
+        <!-- Formule de modification d'un trajet-->
+        <div id="edit-trip-form" class="card hidden" style="margin-top:24px;max-width:760px">
+          <div class="card-title">Modifier le trajet sélectionné</div>
+
+          <input type="hidden" id="edit-trip-id" />
+
+          <div class="search-form" style="margin-bottom:16px">
+            <div class="form-group" style="margin:0">
+              <label>Départ</label>
+              <select id="edit-from">
+                <option value="PARIS">Paris</option>
+                <option value="LYON">Lyon</option>
+                <option value="MARSEILLE">Marseille</option>
+                <option value="LILLE">Lille</option>
+                <option value="BORDEAUX">Bordeaux</option>
+                <option value="NANTES">Nantes</option>
+                <option value="TOULOUSE">Toulouse</option>
+                <option value="STRASBOURG">Strasbourg</option>
+                <option value="NICE">Nice</option>
+                <option value="RENNES">Rennes</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin:0">
+              <label>Arrivée</label>
+              <select id="edit-to">
+                <option value="PARIS">Paris</option>
+                <option value="LYON">Lyon</option>
+                <option value="MARSEILLE">Marseille</option>
+                <option value="LILLE">Lille</option>
+                <option value="BORDEAUX">Bordeaux</option>
+                <option value="NANTES">Nantes</option>
+                <option value="TOULOUSE">Toulouse</option>
+                <option value="STRASBOURG">Strasbourg</option>
+                <option value="NICE">Nice</option>
+                <option value="RENNES">Rennes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="search-form" style="margin-bottom:16px">
+            <div class="form-group" style="margin:0">
+              <label>Date et heure de départ</label>
+              <input type="datetime-local" id="edit-departure-time" />
+            </div>
+
+            <div class="form-group" style="margin:0">
+              <label>Date et heure d’arrivée</label>
+              <input type="datetime-local" id="edit-arrival-time" />
+            </div>
+
+            <div class="form-group" style="margin:0">
+              <label>Prix</label>
+              <input type="number" id="edit-price" step="0.01" min="0" />
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button class="btn btn-primary" onclick="updateTrip()">Enregistrer les modifications</button>
+            <button class="btn btn-secondary" onclick="hideEditTripForm()">Annuler</button>
+          </div>
+        </div>
       </div>
 
       <!-- SECTION: Swagger -->
@@ -316,13 +378,104 @@
       const trips = await api.trips.search(from, to, date);
       const grid = document.getElementById('trips-grid');
       if (!trips.length) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🚆</div><p>Aucun trajet disponible.</p></div>'; return; }
-      grid.innerHTML = trips.map(t => `
+      window.lastSearchedTrips = trips;
+
+      grid.innerHTML = trips.map((t, index) => `
         <div class="trip-card">
-          <div class="trip-route"><span>${t.departureStationCode}</span><span class="arrow">&#8594;</span><span>${t.arrivalStationCode}</span></div>
-          <div class="trip-times">${formatDatetime(t.departureTime)} &rarr; ${formatDatetime(t.arrivalTime)}</div>
-          <div class="trip-footer"><span class="trip-price">${formatPrice(t.price)}</span></div>
-        </div>`).join('');
+          <div class="trip-route">
+            <span>${t.departureStationCode}</span>
+            <span class="arrow">&#8594;</span>
+            <span>${t.arrivalStationCode}</span>
+          </div>
+
+          <div class="trip-times">
+            ${formatDatetime(t.departureTime)} &rarr; ${formatDatetime(t.arrivalTime)}
+          </div>
+
+          <div class="trip-footer">
+            <span class="trip-price">${formatPrice(t.price)}</span>
+            <button class="btn btn-secondary btn-sm" onclick="showEditTripForm(${index})">
+              Modifier
+            </button>
+          </div>
+        </div>
+      `).join('');
     } catch (err) { showAlert('alert-search', 'error', err.message); }
+  }
+
+
+  function toDatetimeLocalValue(value) {
+    if (!value) return '';
+
+    const date = new Date(value);
+    const offsetMs = date.getTimezoneOffset() * 60000;
+
+    return new Date(date.getTime() - offsetMs)
+      .toISOString()
+      .slice(0, 16);
+  }
+
+  function showEditTripForm(index) {
+    const trip = window.lastSearchedTrips[index];
+
+    if (!trip) {
+      showAlert('alert-search', 'error', 'Trajet introuvable.');
+      return;
+    }
+
+    document.getElementById('edit-trip-id').value = trip.id;
+    document.getElementById('edit-from').value = trip.departureStationCode;
+    document.getElementById('edit-to').value = trip.arrivalStationCode;
+    document.getElementById('edit-departure-time').value = toDatetimeLocalValue(trip.departureTime);
+    document.getElementById('edit-arrival-time').value = toDatetimeLocalValue(trip.arrivalTime);
+    document.getElementById('edit-price').value = trip.price;
+
+    document.getElementById('edit-trip-form').classList.remove('hidden');
+    document.getElementById('edit-trip-form').scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
+
+  function hideEditTripForm() {
+    document.getElementById('edit-trip-form').classList.add('hidden');
+  }
+
+  async function updateTrip() {
+    const id = document.getElementById('edit-trip-id').value.trim();
+    const departureStationCode = document.getElementById('edit-from').value;
+    const arrivalStationCode = document.getElementById('edit-to').value;
+    const departureTime = document.getElementById('edit-departure-time').value;
+    const arrivalTime = document.getElementById('edit-arrival-time').value;
+    const price = Number(document.getElementById('edit-price').value);
+
+    if (!id || !departureStationCode || !arrivalStationCode || !departureTime || !arrivalTime || !price) {
+      showAlert('alert-search', 'error', 'Veuillez remplir tous les champs du formulaire de modification.');
+      return;
+    }
+
+    if (departureStationCode === arrivalStationCode) {
+      showAlert('alert-search', 'error', 'La gare de départ et la gare d’arrivée doivent être différentes.');
+      return;
+    }
+
+    try {
+      await api.adminTrips.update(id, {
+        departureStationCode,
+        arrivalStationCode,
+        departureTime,
+        arrivalTime,
+        price,
+      });
+
+      showAlert('alert-search', 'success', 'Trajet modifié avec succès.');
+
+      hideEditTripForm();
+
+      await searchTrips();
+    } catch (err) {
+      showAlert('alert-search', 'error', err.message);
+    }
   }
 </script>
 </body>

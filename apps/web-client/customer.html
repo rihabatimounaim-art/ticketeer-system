@@ -358,19 +358,21 @@
 
     try {
       const tickets = await api.tickets.myTickets();
-      if (tickets.length === 0) {
+      const activeTickets = tickets.filter(isTicketForMyTickets);
+      if (activeTickets.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400)">Aucun billet pour le moment.</td></tr>';
         return;
       }
-      tbody.innerHTML = tickets.map(t => `
+      tbody.innerHTML = activeTickets.map(t => `
         <tr>
           <td><strong>${t.departureStationCode} &rarr; ${t.arrivalStationCode}</strong></td>
           <td>${formatDatetime(t.departureTime)}</td>
           <td style="font-size:.8125rem">
-            Du ${formatDatetime(t.validFrom)}<br/>au ${formatDatetime(t.validUntil)}
+            Du ${formatDatetime(new Date(new Date(t.departureTime).getTime() - 30 * 60 * 1000))}<br/>
+            au ${formatDatetime(new Date(new Date(t.arrivalTime).getTime() + 30 * 60 * 1000))}
           </td>
           <td>${formatPrice(t.price)}</td>
-          <td>${statusBadge(t.status)}</td>
+          <td>${statusBadge(getDisplayedTicketStatus(t))}</td>
           <td>
             <div class="flex gap-2">
               <button class="btn btn-secondary btn-sm" title="Telecharger QR" onclick="downloadQr('${t.id}')">QR</button>
@@ -408,7 +410,13 @@
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)">Chargement...</td></tr>';
 
     try {
-      const tickets = await api.tickets.history();
+      const tickets = await api.tickets.myTickets();
+      tickets.sort((a, b) => {
+        const dateA = new Date(a.departureTime || a.issuedAt || a.validFrom);
+        const dateB = new Date(b.departureTime || b.issuedAt || b.validFrom);
+
+        return dateB - dateA;
+      });
       if (tickets.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)">Aucun voyage passe.</td></tr>';
         return;
@@ -418,13 +426,53 @@
           <td><strong>${t.departureStationCode} &rarr; ${t.arrivalStationCode}</strong></td>
           <td>${formatDatetime(t.departureTime)}</td>
           <td>${formatPrice(t.price)}</td>
-          <td>${statusBadge(t.status)}</td>
+          <td>${statusBadge(getDisplayedTicketStatus(t))}</td>
           <td style="font-size:.8125rem;color:var(--gray-500)">${formatDatetime(t.issuedAt)}</td>
         </tr>
       `).join('');
     } catch (err) {
       showAlert('alert-history', 'error', err.message);
     }
+  }
+
+  function getDisplayedTicketStatus(ticket) {
+    const rawStatus = ticket.status;
+
+    if (
+      rawStatus === 'ALREADY_CONTROLLED' ||
+      rawStatus === 'CONTROLLED' ||
+      rawStatus === 'DEJA_CONTROLE'
+    ) {
+      return 'ALREADY_CONTROLLED';
+    }
+
+    const now = new Date();
+
+    const departureTime = new Date(ticket.departureTime);
+    const arrivalTime = new Date(ticket.arrivalTime);
+
+    const validFrom = new Date(departureTime.getTime() - 30 * 60 * 1000);
+    const validUntil = new Date(arrivalTime.getTime() + 30 * 60 * 1000);
+
+    if (now < validFrom) {
+      return 'TOO_EARLY';
+    }
+
+    if (now > validUntil) {
+      return 'EXPIRED';
+    }
+
+    return 'VALID';
+  }
+
+  function isTicketForHistory(ticket) {
+    const status = getDisplayedTicketStatus(ticket);
+
+    return status === 'EXPIRED' || status === 'ALREADY_CONTROLLED';
+  }
+
+  function isTicketForMyTickets(ticket) {
+    return !isTicketForHistory(ticket);
   }
 </script>
 </body>
