@@ -30,6 +30,10 @@
         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
         Mes billets
       </button>
+      <button class="nav-item" onclick="showSection('history')">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Historique
+      </button>
     </nav>
     <div class="sidebar-footer">
       <button class="nav-item" onclick="logout()">
@@ -108,6 +112,36 @@
         </div>
       </div>
 
+      <!-- SECTION: History -->
+      <div id="section-history" class="hidden">
+        <div id="alert-history"></div>
+        <div class="flex-between" style="margin-bottom:20px">
+          <div class="section-title" style="margin:0">Historique des voyages</div>
+          <button class="btn btn-secondary btn-sm" onclick="loadHistory()">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Actualiser
+          </button>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trajet</th>
+                  <th>Date du voyage</th>
+                  <th>Prix paye</th>
+                  <th>Statut</th>
+                  <th>Achete le</th>
+                </tr>
+              </thead>
+              <tbody id="history-body">
+                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)">Chargement...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- SECTION: My Tickets -->
       <div id="section-tickets" class="hidden">
         <div id="alert-tickets"></div>
@@ -177,9 +211,10 @@
     document.getElementById('section-' + name).classList.remove('hidden');
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     event.currentTarget.classList.add('active');
-    const titles = { search: 'Rechercher un trajet', tickets: 'Mes billets' };
+    const titles = { search: 'Rechercher un trajet', tickets: 'Mes billets', history: 'Historique des voyages' };
     document.getElementById('page-title').textContent = titles[name] || '';
     if (name === 'tickets') loadMyTickets();
+    if (name === 'history') loadHistory();
   }
 
   function logout() {
@@ -224,33 +259,54 @@
 
     if (trips.length === 0) return;
 
-    grid.innerHTML = trips.map(t => `
-      <div class="trip-card">
-        <div class="trip-route">
-          <span>${t.departureStationCode}</span>
-          <span class="arrow">&#8594;</span>
-          <span>${t.arrivalStationCode}</span>
+    grid.innerHTML = trips.map(t => {
+      const hasDiscount = t.discountPercent > 0;
+      const discountBadge = hasDiscount
+        ? `<span class="badge badge-success" style="font-size:.75rem">-${t.discountPercent}% ${t.discountLabel}</span>`
+        : '';
+      const priceHtml = hasDiscount
+        ? `<span style="text-decoration:line-through;color:var(--gray-400);font-size:.85rem">${formatPrice(t.price)}</span>
+           <span class="trip-price" style="color:#16a34a">${formatPrice(t.discountedPrice)}</span>`
+        : `<span class="trip-price">${formatPrice(t.price)}</span>`;
+
+      return `
+        <div class="trip-card">
+          <div class="trip-route">
+            <span>${t.departureStationCode}</span>
+            <span class="arrow">&#8594;</span>
+            <span>${t.arrivalStationCode}</span>
+          </div>
+          <div class="trip-times">
+            ${formatDatetime(t.departureTime)} &rarr; ${formatDatetime(t.arrivalTime)}
+          </div>
+          ${discountBadge ? `<div style="margin:6px 0">${discountBadge}</div>` : ''}
+          <div class="trip-footer">
+            <div style="display:flex;flex-direction:column;gap:2px">${priceHtml}</div>
+            <button class="btn btn-primary btn-sm" onclick='openBuyModal(${JSON.stringify(t)})'>
+              Acheter
+            </button>
+          </div>
         </div>
-        <div class="trip-times">
-          ${formatDatetime(t.departureTime)} &rarr; ${formatDatetime(t.arrivalTime)}
-        </div>
-        <div class="trip-footer">
-          <span class="trip-price">${formatPrice(t.price)}</span>
-          <button class="btn btn-primary btn-sm" onclick='openBuyModal(${JSON.stringify(t)})'>
-            Acheter
-          </button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   function openBuyModal(trip) {
     selectedTrip = trip;
+    const hasDiscount = trip.discountPercent > 0;
+    const priceBlock = hasDiscount
+      ? `<div style="margin-top:10px">
+           <span style="text-decoration:line-through;color:var(--gray-400);font-size:.95rem">${formatPrice(trip.price)}</span>
+           <span style="font-size:1.25rem;font-weight:700;color:#16a34a;margin-left:8px">${formatPrice(trip.discountedPrice)}</span>
+           <span class="badge badge-success" style="margin-left:8px">-${trip.discountPercent}% ${trip.discountLabel}</span>
+         </div>`
+      : `<div style="font-size:1.25rem;font-weight:700;color:var(--primary);margin-top:10px">${formatPrice(trip.price)}</div>`;
+
     document.getElementById('modal-trip-details').innerHTML = `
       <div style="font-weight:600;font-size:1.0625rem;margin-bottom:8px">${trip.departureStationCode} &rarr; ${trip.arrivalStationCode}</div>
       <div style="color:var(--gray-600);font-size:.875rem">Depart : ${formatDatetime(trip.departureTime)}</div>
       <div style="color:var(--gray-600);font-size:.875rem">Arrivee : ${formatDatetime(trip.arrivalTime)}</div>
-      <div style="font-size:1.25rem;font-weight:700;color:var(--primary);margin-top:10px">${formatPrice(trip.price)}</div>
+      ${priceBlock}
     `;
     document.getElementById('alert-modal').innerHTML = '';
     document.getElementById('modal-buy').classList.remove('hidden');
@@ -282,7 +338,7 @@
         arrivalStationCode:   selectedTrip.arrivalStationCode,
         departureTime: depTime,
         arrivalTime:   arrTime,
-        price: selectedTrip.price,
+        price: selectedTrip.price,   // le backend recalcule et applique la reduction
       });
 
       closeBuyModal();
@@ -343,6 +399,31 @@
       downloadBlob(blob, `billet-${ticketId}.pdf`);
     } catch (err) {
       showAlert('alert-tickets', 'error', 'Erreur lors du telechargement du PDF.');
+    }
+  }
+
+  // ---- Historique ----
+  async function loadHistory() {
+    const tbody = document.getElementById('history-body');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)">Chargement...</td></tr>';
+
+    try {
+      const tickets = await api.tickets.history();
+      if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)">Aucun voyage passe.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = tickets.map(t => `
+        <tr>
+          <td><strong>${t.departureStationCode} &rarr; ${t.arrivalStationCode}</strong></td>
+          <td>${formatDatetime(t.departureTime)}</td>
+          <td>${formatPrice(t.price)}</td>
+          <td>${statusBadge(t.status)}</td>
+          <td style="font-size:.8125rem;color:var(--gray-500)">${formatDatetime(t.issuedAt)}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      showAlert('alert-history', 'error', err.message);
     }
   }
 </script>

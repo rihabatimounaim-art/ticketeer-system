@@ -66,6 +66,7 @@ const api = {
   tickets: {
     create: (body)        => http('POST', '/tickets', body),
     myTickets: ()         => http('GET', '/tickets/me'),
+    history: ()           => http('GET', '/tickets/me/history'),
     qr: (id)              => httpBlob('GET', `/tickets/${id}/qr`),
     pdf: (id)             => httpBlob('GET', `/tickets/${id}/pdf`),
   },

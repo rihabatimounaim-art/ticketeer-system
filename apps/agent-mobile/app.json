@@ -15,6 +15,7 @@
         "backgroundColor": "#0f1117"
       }
     },
+    "newArchEnabled": false,
     "plugins": [
       [
         "expo-camera",

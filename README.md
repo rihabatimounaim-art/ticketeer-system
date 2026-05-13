@@ -1,6 +1,6 @@
-# Ticketeer — Railway Ticketing System
+# Ticketeer — Système de Billetterie Ferroviaire
 
-> Plateforme complète de billetterie ferroviaire : achat de billets, génération QR/PDF, validation en temps réel et tableau de bord administrateur.
+> Plateforme complète de billetterie ferroviaire : achat de billets, génération QR/PDF, validation en temps réel par app mobile et tableau de bord administrateur.
 
 ---
 
@@ -11,42 +11,45 @@
 3. [Structure du projet](#structure-du-projet)
 4. [Stack technique](#stack-technique)
 5. [Démarrage rapide](#démarrage-rapide)
-   - [Prérequis](#prérequis)
-   - [Mode développement (H2 in-memory)](#mode-développement-h2-in-memory)
-   - [Mode production (PostgreSQL)](#mode-production-postgresql)
-   - [Tout démarrer avec Docker](#tout-démarrer-avec-docker)
 6. [Client web](#client-web)
-7. [API REST](#api-rest)
-   - [Authentification](#authentification)
-   - [Trajets](#trajets)
-   - [Billets](#billets)
-   - [Contrôle](#contrôle)
-8. [Comptes de démonstration](#comptes-de-démonstration)
-9. [Base de données](#base-de-données)
-10. [Sécurité](#sécurité)
-11. [Tests](#tests)
-12. [Variables d'environnement](#variables-denvironnement)
-13. [Roadmap](#roadmap)
+7. [App mobile agent](#app-mobile-agent)
+8. [API REST](#api-rest)
+9. [Comptes de démonstration](#comptes-de-démonstration)
+10. [Base de données](#base-de-données)
+11. [Sécurité](#sécurité)
+12. [Tests](#tests)
+13. [Variables d'environnement](#variables-denvironnement)
+14. [Roadmap](#roadmap)
 
 ---
 
 ## Vue d'ensemble
 
-Ticketeer est un système de billetterie ferroviaire complet conçu selon les principes du **Clean Architecture** et du **Domain-Driven Design**. Il couvre l'ensemble du cycle de vie d'un billet : recherche de trajet → achat → téléchargement QR/PDF → validation par un agent.
+Ticketeer est un système de billetterie ferroviaire complet conçu selon les principes du **Clean Architecture** et du **Domain-Driven Design**. Il couvre l'ensemble du cycle de vie d'un billet : recherche de trajet → achat → téléchargement QR/PDF → validation par un agent via app mobile.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                       CLIENT WEB (SPA)                      │
-│   Login  │  Espace Client  │  Agent Contrôle  │  Admin      │
+│                    CLIENT WEB (Vanilla JS)                   │
+│   Login  │  Espace Client  │  Contrôle Agent  │  Admin      │
 └────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────┤  HTTP / REST + JWT
+│                        │
+│  ┌─────────────────────▼────────────────────────────────┐   │
+│  │              BACKEND API (Spring Boot 3)              │   │
+│  │  identity │ network │ ticketing │ control │ security  │   │
+│  └─────────────────────┬────────────────────────────────┘   │
+│                        │ JPA / Flyway                        │
+│  ┌─────────────────────▼────────────────────────────────┐   │
+│  │         PostgreSQL 16  (H2 in-memory en dev)         │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+                         ▲
                          │ HTTP / REST + JWT
-┌────────────────────────▼────────────────────────────────────┐
-│                    BACKEND API (Spring Boot 3)               │
-│  identity │ network │ ticketing │ control │ shared/security  │
-└────────────────────────┬────────────────────────────────────┘
-                         │ JPA / Flyway
-┌────────────────────────▼────────────────────────────────────┐
-│            PostgreSQL 16  (H2 in-memory en dev)             │
+┌────────────────────────┴────────────────────────────────────┐
+│              APP MOBILE AGENT (React Native + Expo)          │
+│         Login  │  Scanner QR  │  Résultat validation         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -54,13 +57,13 @@ Ticketeer est un système de billetterie ferroviaire complet conçu selon les pr
 
 ## Architecture
 
-Le backend est un **monolithe modulaire** organisé en contextes bornés (bounded contexts) indépendants. Chaque contexte suit le pattern Ports & Adapters (Hexagonale) :
+Le backend est un **monolithe modulaire** organisé en contextes bornés (bounded contexts) indépendants. Chaque contexte suit le pattern **Ports & Adapters (Hexagonale)** :
 
 ```
 domain/          ← entités, value objects, règles métier pures
 application/     ← use cases, ports (interfaces)
 infrastructure/  ← adapters (JPA, JWT, QR, PDF…)
-api/rest/        ← controllers, DTOs (entrée/sortie)
+api/rest/        ← controllers, DTOs
 ```
 
 ### Contextes bornés
@@ -68,7 +71,7 @@ api/rest/        ← controllers, DTOs (entrée/sortie)
 | Contexte | Responsabilité |
 |----------|----------------|
 | **identity** | Authentification JWT, gestion des utilisateurs, BCrypt |
-| **network** | Gares, trajets, recherche par date/route |
+| **network** | Gares (10 villes), trajets, recherche par date/route |
 | **ticketing** | Émission de billets, génération QR (ZXing), PDF (OpenPDF) |
 | **control** | Validation de billets par les agents, audit log |
 | **shared** | Exceptions domaine, `DateRange`, `DomainClock`, `GlobalExceptionHandler` |
@@ -81,14 +84,26 @@ api/rest/        ← controllers, DTOs (entrée/sortie)
 ```
 ticketeer-system/
 ├── apps/
-│   ├── web-client/               # SPA Vanilla JS — 4 pages
+│   ├── web-client/               # SPA Vanilla JS
 │   │   ├── index.html            # Page de connexion
 │   │   ├── customer.html         # Espace client (recherche + billets)
-│   │   ├── agent.html            # Interface de contrôle (scanner QR)
 │   │   ├── admin.html            # Tableau de bord admin
-│   │   ├── css/style.css         # Design system complet
+│   │   ├── dashboard.html        # Vue trajets admin
+│   │   ├── css/style.css
 │   │   └── js/api.js             # Client HTTP + utilitaires
-│   └── agent-mobile/             # App mobile agent (scaffold)
+│   │
+│   └── agent-mobile/             # App mobile React Native (Expo)
+│       ├── App.js                # Navigation principale
+│       ├── app.json              # Config Expo (SDK 54)
+│       ├── package.json
+│       └── src/
+│           ├── config.js         # URL du backend (à adapter)
+│           ├── api.js            # Appels HTTP (login + validate)
+│           └── screens/
+│               ├── LoginScreen.js    # Authentification agent
+│               ├── ScannerScreen.js  # Scanner QR caméra
+│               └── ResultScreen.js   # Résultat VALID / EXPIRED / ALREADY_CONTROLLED
+│
 ├── services/
 │   └── backend/                  # API Spring Boot 3
 │       ├── src/main/java/com/ticketeer/
@@ -98,24 +113,22 @@ ticketeer-system/
 │       │   ├── control/
 │       │   ├── shared/
 │       │   ├── security/
-│       │   ├── bootstrap/        # Seed data au démarrage
-│       │   └── config/
+│       │   ├── bootstrap/        # DataInitializer (seed au démarrage)
+│       │   └── config/           # AppConfig (câblage des beans)
 │       ├── src/main/resources/
 │       │   ├── application.yml
 │       │   ├── application-h2.yml
 │       │   ├── application-postgres.yml
-│       │   └── db/migration/
-│       │       └── V1__init_schema.sql
+│       │   └── db/migration/V1__init_schema.sql
 │       ├── src/test/             # Tests unitaires JUnit 5
-│       ├── Dockerfile            # Multi-stage build
+│       ├── Dockerfile
 │       └── pom.xml
+│
 ├── docs/
-│   ├── adr/                      # Architecture Decision Records
-│   ├── architecture/
 │   └── domain/
 │       ├── backend-domain-model.md
 │       └── shared-kernel.md
-├── docker-compose.yml            # PostgreSQL 16 + Backend
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -140,13 +153,22 @@ ticketeer-system/
 | Springdoc OpenAPI | 2.6.0 | Documentation Swagger UI |
 | JUnit 5 + Mockito | — | Tests unitaires |
 
-### Frontend
+### Client web
 
 | Technologie | Usage |
 |-------------|-------|
 | HTML5 / CSS3 / Vanilla JS | SPA sans framework |
-| html5-qrcode (CDN) | Scanner QR caméra (page agent) |
 | Fetch API | Appels HTTP vers le backend |
+
+### App mobile
+
+| Technologie | Version | Usage |
+|-------------|---------|-------|
+| React Native | 0.77.1 | Framework mobile |
+| Expo | SDK 54 | Outillage & build |
+| expo-camera | 16.x | Scanner QR code via caméra |
+| React Navigation | v6 | Navigation entre écrans |
+| AsyncStorage | 2.x | Stockage local du JWT |
 
 ### Infrastructure
 
@@ -154,7 +176,6 @@ ticketeer-system/
 |-------------|-------|
 | Docker | Conteneurisation backend |
 | Docker Compose | Orchestration locale (DB + API) |
-| eclipse-temurin:17 | Image de base JDK/JRE |
 
 ---
 
@@ -164,83 +185,114 @@ ticketeer-system/
 
 - Java 17+
 - Maven 3.8+
-- Docker & Docker Compose (optionnel)
-- Python 3 (pour servir le client web en local)
+- Python 3 (pour servir le client web)
+- Node.js 18+ (pour l'app mobile)
+- Expo Go installé sur le téléphone ([iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
 
 ---
 
-### Mode développement (H2 in-memory)
-
-Le mode le plus simple — aucune base de données à installer.
+### Terminal 1 — Backend
 
 ```bash
 cd services/backend
 mvn spring-boot:run
 ```
 
-L'API démarre sur **http://localhost:8080**.
+✅ API disponible sur **http://localhost:8080**  
+📖 Swagger UI : **http://localhost:8080/swagger-ui.html**  
+🗄️ H2 Console : **http://localhost:8080/h2-console** (JDBC URL: `jdbc:h2:mem:ticketeerdb`, user: `sa`, password: vide)
 
-La base H2 est initialisée en mémoire via Flyway au démarrage. Les données de démonstration (utilisateurs, gares, trajets) sont seedées automatiquement par `DataInitializer`.
+> Les données de démonstration (utilisateurs, gares, trajets) sont seedées automatiquement au démarrage.
 
-> Console H2 disponible sur : http://localhost:8080/h2-console  
-> JDBC URL : `jdbc:h2:mem:ticketeerdb`
+---
 
-**Servir le client web :**
+### Terminal 2 — Client web
 
 ```bash
 cd apps/web-client
-python3 -m http.server 8001
-# Ouvrir : http://localhost:8001/index.html
+python -m http.server 8001
+```
+
+✅ Disponible sur **http://localhost:8001/customer.html**
+
+---
+
+### Terminal 3 — App mobile agent (optionnel)
+
+```bash
+cd apps/agent-mobile
+npm install --legacy-peer-deps
+npx expo start
+```
+
+1. Scanner le QR code affiché dans le terminal avec **Expo Go**
+2. L'app se charge sur le téléphone
+
+> ⚠️ **Important** : le téléphone et le PC doivent être sur le **même réseau Wi-Fi**.  
+> ⚠️ Modifier `src/config.js` avec l'adresse IP Wi-Fi du PC (commande `ipconfig` sur Windows).
+
+```js
+// src/config.js
+export const API_BASE_URL = 'http://<VOTRE_IP_WIFI>:8080';
 ```
 
 ---
 
-### Mode production (PostgreSQL)
+### Mode production (PostgreSQL + Docker)
 
 ```bash
-# 1. Démarrer PostgreSQL
-docker compose up postgres -d
-
-# 2. Lancer le backend avec le profil postgres
-cd services/backend
-SPRING_PROFILES_ACTIVE=postgres \
-DATABASE_URL=jdbc:postgresql://localhost:5432/ticketeerdb \
-DATABASE_USER=ticketeer \
-DATABASE_PASSWORD=ticketeer \
-mvn spring-boot:run
-```
-
----
-
-### Tout démarrer avec Docker
-
-```bash
-# Build et démarrage de l'ensemble (PostgreSQL + Backend)
+# Tout démarrer
 docker compose up --build
 
 # Arrêter
 docker compose down
 
-# Arrêter et supprimer les volumes (reset complet de la DB)
+# Reset complet de la base
 docker compose down -v
 ```
-
-L'API est accessible sur **http://localhost:8080** après le healthcheck PostgreSQL (~10 secondes).
 
 ---
 
 ## Client web
 
-Le client web est une SPA Vanilla JS organisée en 4 pages, chacune dédiée à un rôle :
-
-| Page | URL | Rôle requis | Fonctionnalités |
-|------|-----|-------------|-----------------|
+| Page | URL | Rôle | Fonctionnalités |
+|------|-----|------|-----------------|
 | `index.html` | `/index.html` | Public | Connexion, redirection par rôle |
-| `customer.html` | `/customer.html` | CLIENT, ADMIN | Recherche de trajet, achat de billet, consultation des billets, téléchargement QR/PDF |
-| `agent.html` | `/agent.html` | AGENT, ADMIN | Saisie manuelle d'ID ou scan QR caméra, résultat de validation, historique de session |
-| `admin.html` | `/admin.html` | ADMIN | Statistiques, liste des utilisateurs, gestion des gares, Swagger UI intégré |
+| `customer.html` | `/customer.html` | CUSTOMER, ADMIN | Recherche trajet, achat billet, liste billets, historique, QR/PDF |
+| `admin.html` | `/admin.html` | ADMIN | Recherche trajets, gestion |
+| `dashboard.html` | `/dashboard.html` | ADMIN | Vue tableau des trajets |
 
-**Authentification :** JWT stocké en `localStorage`. Chaque requête HTTP inclut automatiquement `Authorization: Bearer <token>`. La redirection vers `index.html` est déclenchée si le token est absent ou expiré.
+---
+
+## App mobile agent
+
+L'app mobile est destinée aux **agents contrôleurs**. Elle permet de scanner le QR code d'un billet et d'obtenir instantanément son statut de validité.
+
+### Flux de l'app
+
+```
+[Login] → [Scanner QR] → [Résultat]
+                              ↓
+               ✅ BILLET VALIDE
+               ⏰ BILLET EXPIRÉ
+               🚫 DÉJÀ CONTRÔLÉ
+               ❌ ERREUR
+```
+
+### Écrans
+
+| Écran | Description |
+|-------|-------------|
+| **LoginScreen** | Email + mot de passe, pré-rempli avec le compte agent |
+| **ScannerScreen** | Caméra plein écran avec cadre de scan, détection QR automatique |
+| **ResultScreen** | Résultat coloré avec détails du billet (passager, validité) |
+
+### Compte agent par défaut
+
+```
+Email    : monir@ticketeer.com
+Password : control123
+```
 
 ---
 
@@ -248,117 +300,63 @@ Le client web est une SPA Vanilla JS organisée en 4 pages, chacune dédiée à 
 
 Documentation interactive complète : **http://localhost:8080/swagger-ui.html**
 
-Spécification OpenAPI JSON : **http://localhost:8080/api-docs**
-
 ### Authentification
 
 | Méthode | Endpoint | Accès | Description |
 |---------|----------|-------|-------------|
-| `POST` | `/auth/login` | Public | Connexion — retourne un JWT |
+| `POST` | `/auth/login` | Public | Retourne un JWT |
 
-**Exemple de requête :**
 ```json
 POST /auth/login
-{
-  "email": "mia@ticketeer.com",
-  "password": "user123"
-}
-```
+{ "email": "mia@ticketeer.com", "password": "user123" }
 
-**Exemple de réponse :**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "userId": "uuid-...",
-  "email": "mia@ticketeer.com",
-  "role": "CUSTOMER"
-}
+→ { "token": "eyJhbGciOiJIUzI1NiJ9..." }
 ```
-
----
 
 ### Trajets
 
 | Méthode | Endpoint | Accès | Description |
 |---------|----------|-------|-------------|
-| `GET` | `/trips/search?from=PARIS&to=LYON&date=2026-05-02` | Public | Recherche de trajets par route et date |
-
-**Exemple de réponse :**
-```json
-[
-  {
-    "id": "uuid-...",
-    "departureStationCode": "PARIS",
-    "arrivalStationCode": "LYON",
-    "departureTime": "2026-05-02T08:00:00",
-    "arrivalTime": "2026-05-02T10:00:00",
-    "price": 45.00
-  }
-]
-```
-
----
+| `GET` | `/trips/search?from=PARIS&to=LYON&date=2026-05-07` | Public | Recherche par route et date |
 
 ### Billets
 
 | Méthode | Endpoint | Accès | Description |
 |---------|----------|-------|-------------|
-| `POST` | `/tickets` | CUSTOMER, ADMIN | Acheter un billet |
-| `GET` | `/tickets/me` | CUSTOMER, ADMIN | Lister mes billets |
-| `GET` | `/tickets/{id}/qr` | CUSTOMER, ADMIN | Télécharger le QR code (PNG) |
-| `GET` | `/tickets/{id}/pdf` | CUSTOMER, ADMIN | Télécharger le billet PDF |
-
-**Exemple d'achat :**
-```json
-POST /tickets
-Authorization: Bearer <token>
-{
-  "holderId": "uuid-...",
-  "departureStationCode": "PARIS",
-  "arrivalStationCode": "LYON",
-  "departureTime": "2026-05-02T08:00:00",
-  "arrivalTime": "2026-05-02T10:00:00",
-  "validFrom": "2026-05-01T12:00:00Z",
-  "validUntil": "2026-05-02T12:00:00Z",
-  "price": 45.00
-}
-```
-
----
+| `POST` | `/tickets` | CUSTOMER, ADMIN | Acheter un billet (réduction appliquée côté serveur) |
+| `GET` | `/tickets/me` | CUSTOMER, ADMIN | Mes billets actifs |
+| `GET` | `/tickets/me/history` | CUSTOMER, ADMIN | Historique des voyages passés |
+| `GET` | `/tickets/{id}/qr` | CUSTOMER, ADMIN | QR code (PNG) |
+| `GET` | `/tickets/{id}/pdf` | CUSTOMER, ADMIN | Billet PDF |
 
 ### Contrôle
 
 | Méthode | Endpoint | Accès | Description |
 |---------|----------|-------|-------------|
-| `POST` | `/control/validate` | AGENT, ADMIN | Valider un billet (par ID) |
+| `POST` | `/control/validate` | AGENT, ADMIN | Valider un billet |
 
-**Exemple :**
 ```json
 POST /control/validate
 Authorization: Bearer <token>
 { "ticketId": "uuid-..." }
-```
 
-**Réponse :**
-```json
-{ "result": "VALID" }
-// Valeurs possibles : VALID | ALREADY_CONTROLLED | EXPIRED | NOT_FOUND
+→ { "result": "VALID" }
+// Valeurs : VALID | ALREADY_CONTROLLED | EXPIRED
 ```
 
 ---
 
 ## Comptes de démonstration
 
-Créés automatiquement au démarrage (seed data) :
+Créés automatiquement au démarrage :
 
 | Rôle | Email | Mot de passe |
 |------|-------|--------------|
 | Client | mia@ticketeer.com | `user123` |
 | Client | lola@ticketeer.com | `user123` |
+| Client | rihabe@ticketeer.com | `user123` |
 | Agent | monir@ticketeer.com | `control123` |
 | Admin | ouail@ticketeer.com | `admin123` |
-
-Les trajets seedés sont toujours dans le futur (calculés dynamiquement à partir de `LocalDate.now()`).
 
 ---
 
@@ -367,24 +365,18 @@ Les trajets seedés sont toujours dans le futur (calculés dynamiquement à part
 ### Schéma (Flyway V1)
 
 ```
-users
-  id (UUID PK), email (unique), password_hash, role, first_name, last_name, active
-
-stations
-  code (PK), name
-
-trips
-  id (UUID PK), departure_station_code (FK), arrival_station_code (FK),
-  departure_time, arrival_time, price
-
-tickets
-  id (UUID PK), holder_id (FK → users), departure/arrival station codes,
-  departure/arrival times, price, valid_from, valid_until, status, issued_at
-
-validation_records
-  id (UUID PK), ticket_id (FK → tickets), agent_id (FK → users),
-  validated_at, result
+users               → id, email, password_hash, role, first_name, last_name, active
+stations            → code (PK), name  [10 villes françaises]
+trips               → id, departure/arrival station codes, departure/arrival times, price
+tickets             → id, holder_id, stations, times, price, valid_from, valid_until, status, issued_at
+validation_records  → id, ticket_id, agent_id, validated_at, result
 ```
+
+### Données seedées
+
+- **10 gares** : Paris, Lyon, Marseille, Lille, Bordeaux, Nantes, Toulouse, Strasbourg, Nice, Rennes
+- **26 trajets** : J+1/J+2/J+3 (plein tarif) + prochain samedi (−10% weekend) + samedi dans 3 semaines (−25% weekend + anticipée)
+- **5 billets passés** seedés pour la démo de l'historique (Mia, Lola, Rihabe)
 
 ### Profils Spring
 
@@ -399,13 +391,12 @@ validation_records
 
 - **JWT (JJWT 0.12.6)** — Tokens signés HMAC-SHA256, expiration 24h
 - **BCrypt** — Hachage des mots de passe (force 10)
-- **HMAC-SHA256** — Signature des données QR code pour prévenir la falsification
-- **Spring Security** — Filtre stateless, CORS configuré, Swagger/H2 en liste blanche
-- **Validation Jakarta** — `@Valid` sur tous les DTOs d'entrée, erreurs formatées en JSON
+- **HMAC-SHA256** — Signature des QR codes pour prévenir la falsification
+- **Spring Security** — Filtre stateless, CORS configuré (`*`)
+- **Validation Jakarta** — `@Valid` sur tous les DTOs
 
-**En production, remplacer obligatoirement :**
+**Secrets à changer en production :**
 ```yaml
-# Variables d'environnement
 JWT_SECRET=<clé aléatoire ≥ 32 caractères>
 QR_SECRET=<clé aléatoire ≥ 32 caractères>
 ```
@@ -416,15 +407,8 @@ QR_SECRET=<clé aléatoire ≥ 32 caractères>
 
 ```bash
 cd services/backend
-
-# Lancer tous les tests
 mvn test
-
-# Rapport de couverture (si JaCoCo configuré)
-mvn verify
 ```
-
-### Couverture actuelle
 
 | Classe testée | Tests | Cas couverts |
 |---------------|-------|--------------|
@@ -442,42 +426,53 @@ mvn verify
 | `DATABASE_URL` | — | URL JDBC PostgreSQL |
 | `DATABASE_USER` | — | Utilisateur PostgreSQL |
 | `DATABASE_PASSWORD` | — | Mot de passe PostgreSQL |
-| `JWT_SECRET` | `change-this-secret-key-for-dev-only-32chars` | Clé de signature JWT |
-| `QR_SECRET` | `change-this-ticket-qr-secret-for-dev-32ch` | Clé HMAC pour QR codes |
-
-> **Ne jamais committer les secrets en production.** Utiliser un gestionnaire de secrets (Vault, AWS Secrets Manager, variables CI/CD).
+| `JWT_SECRET` | `change-this-secret-key-for-dev-only-32chars` | Clé JWT |
+| `QR_SECRET` | `change-this-ticket-qr-secret-for-dev-32ch` | Clé HMAC QR |
 
 ---
 
 ## Roadmap
 
-### Court terme (soutenance)
-- [x] Backend REST complet avec Clean Architecture
-- [x] Authentification JWT + Spring Security
-- [x] Génération QR code et PDF
-- [x] Validation de billets (agents)
-- [x] Client web 4 rôles (client, agent, admin, login)
+### Court terme — Soutenance ✅
+
+- [x] Backend REST complet avec Clean Architecture + DDD
+- [x] Authentification JWT + Spring Security (3 rôles)
+- [x] 10 villes, 26 trajets seedés dynamiquement
+- [x] Génération QR code signé (HMAC) et PDF (nom passager, trajet, prix)
+- [x] Validation de billets par agent
+- [x] **Politique de réductions** (saison basse −20%, weekend −10%, anticipée −15%, plafond 30%)
+- [x] **Historique des voyages** (`GET /tickets/me/history`)
+- [x] Client web : recherche, achat, billets, historique, QR/PDF
+- [x] **App mobile agent** (React Native + Expo, iOS & Android — scan QR natif)
 - [x] Docker Compose (dev + prod)
 - [x] Migrations Flyway
 - [x] Documentation Swagger UI
 - [x] Tests unitaires (17 tests)
 
-### Moyen terme (mise en production)
+### Moyen terme — Mise en production
+
 - [ ] Refresh tokens JWT
 - [ ] Interface CRUD admin (gestion gares / trajets)
 - [ ] Paiement en ligne (Stripe)
 - [ ] Envoi de billet par email (SMTP)
-- [ ] App mobile agent (scan QR natif)
 - [ ] Monitoring (Actuator + Prometheus + Grafana)
 - [ ] CI/CD pipeline (GitHub Actions)
 - [ ] HTTPS / reverse proxy (Nginx / Caddy)
 
 ---
 
-## Licence
+## Scénario de démo
 
-Projet académique — tous droits réservés.
+1. Ouvrir `http://localhost:8001/customer.html`
+2. Se connecter avec `mia@ticketeer.com` / `user123`
+3. Rechercher **Paris → Lyon** pour **le prochain samedi** → voir la réduction weekend **−10%**
+4. Acheter un billet → télécharger le **QR code** ou le **PDF**
+5. Cliquer **Historique** dans la sidebar → voir les voyages passés
+6. Sur iPhone/Android → ouvrir **Ticketeer Agent**
+7. Se connecter avec `monir@ticketeer.com` / `control123`
+8. Scanner le QR code → ✅ **BILLET VALIDE**
+9. Rescanner le même QR → 🚫 **DÉJÀ CONTRÔLÉ**
 
 ---
 
-*Développé avec Java 17 · Spring Boot 3 · Clean Architecture · DDD*
+*Développé avec Java 17 · Spring Boot 3 · React Native · Clean Architecture · DDD*
